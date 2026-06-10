@@ -14,10 +14,12 @@
 <meta property="og:title" content="金運ホロスコープカレンダー">
 <meta property="og:description" content="あなただけの星読み金運アプリ。西洋占星術×日本の吉日で今日の金運を毎日チェック。">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://11th-principality.github.io/kinunn-calendar/">
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="金運ホロスコープカレンダー">
 <meta name="twitter:description" content="あなただけの星読み金運アプリ。今日の金運・吉日・月のバイオリズムを毎日チェック。">
+<meta name="twitter:site" content="@kinunn_calendar">
 
 <!-- ── PWA設定 ── -->
 <meta name="theme-color" content="#0d0a14">
@@ -29,6 +31,17 @@
 
 <!-- ── フォント ── -->
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Zen+Kaku+Gothic+New:wght@300;400;700&display=swap" rel="stylesheet">
+
+<!-- ── Service Worker（プッシュ通知用） ── -->
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW登録成功:', reg.scope))
+      .catch(err => console.log('SW登録失敗:', err));
+  });
+}
+</script>
 <style>
   :root {
     --gold: #C9A96E;
@@ -1511,17 +1524,25 @@
     </div>
   </div>
 
-  <!-- 将来のプッシュ通知案内 -->
-  <div class="nt-future-card">
-    <div style="font-size:24px; margin-bottom:10px;">🔔</div>
-    <div style="font-size:13px; color:rgba(255,255,255,0.8); margin-bottom:6px; font-weight:700;">
-      毎朝届くプッシュ通知（準備中）
+  <!-- プッシュ通知許可カード -->
+  <div class="nt-future-card" id="ntPushCard">
+    <div style="font-size:28px; margin-bottom:10px;">🔔</div>
+    <div style="font-size:13px; color:rgba(255,255,255,0.9); margin-bottom:8px; font-weight:700;">
+      毎朝8時に金運アラートを受け取る
     </div>
-    <div style="font-size:11px; color:rgba(255,255,255,0.45); line-height:1.7;">
-      アプリをサーバーに載せた後、<br>
-      毎朝8時に自動でお知らせする<br>
-      本格プッシュ通知を追加予定です✨
+    <div style="font-size:11px; color:rgba(255,255,255,0.5); line-height:1.7; margin-bottom:16px;">
+      吉日・個人金運最強日の前日夜と<br>毎朝8時に自動でお知らせします。
     </div>
+    <button id="ntPushBtn" onclick="requestPushPermission()"
+      style="width:100%; padding:13px;
+             background:linear-gradient(135deg,#C9A96E,#F0D9A8);
+             border:none; border-radius:14px; color:#1c1228;
+             font-family:'Zen Kaku Gothic New',sans-serif;
+             font-size:13px; font-weight:700; cursor:pointer; letter-spacing:0.08em;">
+      🔔 プッシュ通知を許可する
+    </button>
+    <div id="ntPushStatus" style="font-size:11px; color:rgba(255,255,255,0.4);
+         margin-top:10px; text-align:center; line-height:1.6;"></div>
   </div>
 
   <div style="height:20px;"></div>
@@ -3085,9 +3106,157 @@ async function startApp(cfg) {
 
 
 // ============================================================
-// ── エントリーポイント
-//    localStorage にデータがある → そのまま起動
-//    ない → 入力画面を表示
+// 🔔 プッシュ通知エンジン
+// ============================================================
+
+/** 通知許可を要求してスケジュールを登録 */
+async function requestPushPermission() {
+  const btn    = document.getElementById('ntPushBtn');
+  const status = document.getElementById('ntPushStatus');
+
+  // Service Worker 非対応環境
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+    status.textContent = '⚠️ このブラウザはプッシュ通知に対応していません。\nChromeまたはEdgeをお試しください。';
+    return;
+  }
+
+  // すでに許可済み
+  if (Notification.permission === 'granted') {
+    status.textContent = '✅ 通知は許可済みです。毎朝8時にお届けします！';
+    btn.textContent = '✅ 通知許可済み';
+    btn.style.background = 'rgba(100,200,100,0.3)';
+    scheduleMorningNotification();
+    return;
+  }
+
+  // 拒否済み
+  if (Notification.permission === 'denied') {
+    status.textContent = '🚫 通知がブロックされています。\nブラウザの設定から許可してください。';
+    return;
+  }
+
+  // 許可リクエスト
+  btn.textContent = '許可を確認中...';
+  const permission = await Notification.requestPermission();
+
+  if (permission === 'granted') {
+    status.textContent = '🎉 通知を許可しました！\n毎朝8時と吉日前日にお届けします。';
+    btn.textContent = '✅ 通知許可済み';
+    btn.style.background = 'rgba(100,200,100,0.3)';
+    localStorage.setItem('kinsei_push_enabled', 'true');
+    scheduleMorningNotification();
+    // 今すぐテスト通知
+    setTimeout(() => sendTestNotification(), 1500);
+  } else {
+    status.textContent = '通知を許可しなかった場合、アプリ内アラートのみ表示されます。';
+    btn.textContent = '🔔 プッシュ通知を許可する';
+  }
+}
+
+/** テスト通知（許可直後に1回送る） */
+function sendTestNotification() {
+  if (Notification.permission !== 'granted') return;
+  const today = new Date();
+  const info  = getDayInfo(today.getFullYear(), today.getMonth()+1, today.getDate());
+  const title = info.luckyScore >= 30 ? '🌟 今日は吉日です！' : '✦ 金運ホロスコープカレンダー';
+  const body  = info.tags.length > 0
+    ? info.tags.map(t => t.label).join(' ') + ' — タップして今日の金運を確認'
+    : '今日の金運をチェックしましょう ✨';
+
+  navigator.serviceWorker.ready.then(reg => {
+    reg.showNotification(title, {
+      body,
+      icon:  './icon-192.png',
+      badge: './icon-192.png',
+      tag:   'kinsei-daily',
+      vibrate: [200, 100, 200],
+      data: { url: 'https://11th-principality.github.io/kinunn-calendar/' },
+    });
+  }).catch(() => {
+    // Service Worker未登録時のフォールバック
+    new Notification(title, { body, icon: './icon-192.png' });
+  });
+}
+
+/** 毎朝8時の通知をスケジューリング（タブが開いている間のみ有効） */
+function scheduleMorningNotification() {
+  if (Notification.permission !== 'granted') return;
+
+  const now   = new Date();
+  const next8 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+  if (now >= next8) next8.setDate(next8.getDate() + 1); // 今日の8時を過ぎていたら明日
+
+  const msUntil8 = next8.getTime() - now.getTime();
+  console.log(`次の朝8時通知まで ${Math.round(msUntil8/60000)} 分`);
+
+  setTimeout(() => {
+    sendMorningNotification();
+    // 以降は24時間ごとに繰り返し
+    setInterval(sendMorningNotification, 24 * 60 * 60 * 1000);
+  }, msUntil8);
+}
+
+/** 朝8時の金運通知を送信 */
+function sendMorningNotification() {
+  if (Notification.permission !== 'granted') return;
+  const today = new Date();
+  const info  = getDayInfo(today.getFullYear(), today.getMonth()+1, today.getDate());
+
+  const title = info.tensya          ? '✨ 天赦日！最強の吉日です' :
+                info.topRank === 'S' ? '🌟 今日はあなたの個人金運最強日！' :
+                info.topRank === 'A' ? '💫 今日は占星術吉日です' :
+                info.ichiman         ? '💰 今日は一粒万倍日です' :
+                info.tora            ? `${info.tora==='寅'?'🐅':'🐍'} 今日は${info.tora}の日` :
+                                       '✦ 今日の金運をチェック';
+
+  const body = info.tags.length > 0
+    ? info.tags.filter(t=>t.cls!=='fusei').map(t=>t.label).join(' ✦ ') +
+      (info.fusei ? '\n※不成就日と重なるため慎重に' : '\nタップして詳細を確認')
+    : '今日も星の導きを受け取りましょう ✨';
+
+  navigator.serviceWorker.ready.then(reg => {
+    reg.showNotification(title, {
+      body,
+      icon:    './icon-192.png',
+      badge:   './icon-192.png',
+      tag:     'kinsei-daily',
+      vibrate: [200, 100, 200],
+      actions: [
+        { action: 'open',    title: '今日の金運を見る' },
+        { action: 'dismiss', title: '閉じる' },
+      ],
+      data: { url: 'https://11th-principality.github.io/kinunn-calendar/' },
+    });
+  }).catch(() => {
+    new Notification(title, { body, icon: './icon-192.png' });
+  });
+}
+
+/** 通知設定ページ表示時にボタン状態を更新 */
+function updatePushButtonState() {
+  const btn    = document.getElementById('ntPushBtn');
+  const status = document.getElementById('ntPushStatus');
+  if (!btn) return;
+
+  if (!('Notification' in window)) {
+    btn.textContent = '⚠️ このブラウザは非対応です';
+    btn.style.opacity = '0.5';
+    btn.disabled = true;
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    btn.textContent = '✅ 通知許可済み';
+    btn.style.background = 'rgba(100,200,100,0.3)';
+    status.textContent = '毎朝8時と吉日前日にお届けします 🌙';
+    // スケジュール再登録（ページリロード時）
+    scheduleMorningNotification();
+  } else if (Notification.permission === 'denied') {
+    btn.textContent = '🚫 通知がブロックされています';
+    btn.style.opacity = '0.5';
+    status.textContent = 'ブラウザの設定 → サイト設定 → 通知 から許可してください';
+  }
+}
+
 // ============================================================
 
 // ============================================================
@@ -3315,7 +3484,11 @@ function switchTab(tab) {
     if (mydataPage) { mydataPage.style.display = 'flex'; renderMydata(); }
   } else if (tab === 'notify') {
     const notifyPage = document.getElementById('notifyPage');
-    if (notifyPage) { notifyPage.style.display = 'flex'; renderNotifyPage(); }
+    if (notifyPage) {
+      notifyPage.style.display = 'flex';
+      renderNotifyPage();
+      updatePushButtonState();
+    }
   }
 
   ['today','calendar','mydata','notify'].forEach(id => {
