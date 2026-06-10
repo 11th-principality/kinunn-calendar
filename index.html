@@ -1,1 +1,4142 @@
 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+<!-- ── タイトル・SEO ── -->
+<title>金運ホロスコープカレンダー｜あなただけの星読み金運アプリ</title>
+<meta name="description" content="生年月日を入力するだけ！西洋占星術×日本の吉日で、あなた専用の金運・吉日カレンダーを毎日お届け。一粒万倍日・天赦日・寅の日・ギレンの法則対応。">
+<meta name="keywords" content="金運,ホロスコープ,占星術,吉日,一粒万倍日,天赦日,寅の日,カレンダー,金運アップ">
+<meta name="author" content="金運ホロスコープカレンダー">
+
+<!-- ── OGP（SNSシェア用） ── -->
+<meta property="og:title" content="金運ホロスコープカレンダー">
+<meta property="og:description" content="あなただけの星読み金運アプリ。西洋占星術×日本の吉日で今日の金運を毎日チェック。">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="金運ホロスコープカレンダー">
+<meta name="twitter:description" content="あなただけの星読み金運アプリ。今日の金運・吉日・月のバイオリズムを毎日チェック。">
+
+<!-- ── PWA設定 ── -->
+<meta name="theme-color" content="#0d0a14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="金運カレンダー">
+<link rel="manifest" href="manifest.json">
+
+<!-- ── フォント ── -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Zen+Kaku+Gothic+New:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #C9A96E;
+    --gold-light: #F0D9A8;
+    --gold-pale: #FBF3E2;
+    --rose: #E8C4B8;
+    --rose-deep: #C47E6B;
+    --sage: #A8B8A0;
+    --cream: #FDF8F0;
+    --ink: #2C2018;
+    --ink-soft: #6B5740;
+    --shimmer: #F5E6C8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    background: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+  }
+
+  /* ── 星空背景 ── */
+  .starfield {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse at 20% 10%, #2a1a38 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 80%, #1a2038 0%, transparent 55%),
+                linear-gradient(160deg, #0d0a14 0%, #1c1228 40%, #0a1020 100%);
+    pointer-events: none;
+  }
+  .starfield::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 12% 18%, rgba(255,255,210,0.9) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 12%, rgba(255,250,200,0.8) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 55% 8%, rgba(255,255,255,0.95) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 35%, rgba(200,220,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 72% 45%, rgba(255,230,180,0.8) 0%, transparent 100%),
+      radial-gradient(1px 1px at 92% 58%, rgba(255,255,220,0.9) 0%, transparent 100%),
+      radial-gradient(1px 1px at 18% 70%, rgba(220,200,255,0.7) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 45% 75%, rgba(255,250,200,0.85) 0%, transparent 100%),
+      radial-gradient(1px 1px at 63% 88%, rgba(255,255,210,0.8) 0%, transparent 100%),
+      radial-gradient(1px 1px at 8% 92%, rgba(200,230,255,0.7) 0%, transparent 100%),
+      radial-gradient(2px 2px at 38% 52%, rgba(255,245,180,0.9) 0%, transparent 100%),
+      radial-gradient(1px 1px at 78% 28%, rgba(255,255,200,0.75) 0%, transparent 100%);
+    animation: twinkle 4s ease-in-out infinite alternate;
+  }
+  @keyframes twinkle {
+    0% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+
+  /* ── ページ全体ラッパー ── */
+  .page {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 420px;
+    min-height: 100vh;
+    padding: 0 0 100px;
+    display: flex; flex-direction: column; align-items: center;
+  }
+
+  /* ── ヘッダー ── */
+  header {
+    width: 100%;
+    padding: 28px 24px 16px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .app-name {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 22px;
+    color: var(--gold-light);
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 20px rgba(201,169,110,0.6);
+  }
+  .date-badge {
+    background: rgba(201,169,110,0.15);
+    border: 1px solid rgba(201,169,110,0.4);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 11px;
+    color: var(--gold-light);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── メインカード ── */
+  .main-card {
+    width: calc(100% - 32px);
+    margin: 8px 0 20px;
+    background: linear-gradient(145deg,
+      rgba(255,255,255,0.06) 0%,
+      rgba(201,169,110,0.08) 50%,
+      rgba(255,255,255,0.04) 100%);
+    border: 1px solid rgba(201,169,110,0.35);
+    border-radius: 28px;
+    padding: 32px 28px;
+    backdrop-filter: blur(12px);
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.4),
+      0 0 60px rgba(201,169,110,0.08),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  .main-card::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(201,169,110,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .card-label {
+    font-size: 10px; letter-spacing: 0.18em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-label::before, .card-label::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,169,110,0.5), transparent);
+  }
+
+  /* タロットカード風エリア */
+  .tarot-zone {
+    display: flex; align-items: center; gap: 20px;
+    margin-bottom: 24px;
+  }
+  .tarot-card {
+    flex-shrink: 0;
+    width: 90px; height: 138px;
+    background: linear-gradient(160deg, #1a1030 0%, #0d1525 100%);
+    border: 2px solid var(--gold);
+    border-radius: 10px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 20px rgba(201,169,110,0.2);
+    cursor: pointer;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.4s ease;
+    animation: float 6s ease-in-out infinite;
+    position: relative;
+  }
+  .tarot-card:hover {
+    transform: translateY(-6px) rotate(2deg) scale(1.05);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.6), 0 0 40px rgba(201,169,110,0.35);
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+  }
+  .tarot-card .card-border {
+    position: absolute; inset: 4px;
+    border: 1px solid rgba(201,169,110,0.3);
+    border-radius: 7px;
+    pointer-events: none;
+  }
+  .tarot-symbol {
+    font-size: 36px;
+    filter: drop-shadow(0 0 8px rgba(201,169,110,0.7));
+  }
+  .tarot-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 8px;
+    color: var(--gold-light);
+    letter-spacing: 0.12em;
+    text-align: center;
+    padding: 0 4px;
+  }
+
+  .card-text-zone {
+    flex: 1;
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    color: #fff;
+    line-height: 1.3;
+    margin-bottom: 8px;
+    text-shadow: 0 0 30px rgba(201,169,110,0.4);
+  }
+  .card-subtitle {
+    font-size: 12px;
+    color: var(--gold-light);
+    opacity: 0.85;
+    line-height: 1.7;
+  }
+
+  /* ── スコアエリア ── */
+  .score-section {
+    margin-top: 6px;
+  }
+  .score-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .score-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 0.06em;
+    width: 80px;
+  }
+  .score-bar-wrap {
+    flex: 1; margin: 0 12px;
+    height: 6px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .score-bar {
+    height: 100%; border-radius: 3px;
+    position: relative;
+    animation: barGrow 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .score-bar.gold {
+    background: linear-gradient(90deg, #C9A96E, #F0D9A8, #C9A96E);
+    background-size: 200% 100%;
+    animation: barGrow 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               shimmer 2.5s linear infinite;
+  }
+  .score-bar.rose {
+    background: linear-gradient(90deg, #C47E6B, #E8C4B8, #C47E6B);
+    background-size: 200% 100%;
+    animation: barGrow 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards,
+               shimmer 2.5s linear infinite;
+  }
+  @keyframes barGrow {
+    from { width: 0; }
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .score-stars {
+    font-size: 14px;
+    letter-spacing: 1px;
+    min-width: 72px;
+    text-align: right;
+  }
+
+  /* ── 解説テキスト ── */
+  .desc-card {
+    width: calc(100% - 32px);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 22px 24px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(8px);
+  }
+  .desc-title {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--gold);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .desc-title span { font-size: 16px; }
+  .desc-body {
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.82);
+    line-height: 1.85;
+    font-weight: 300;
+  }
+  .desc-body strong {
+    color: var(--gold-light);
+    font-weight: 700;
+  }
+  .warning-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: rgba(232,196,184,0.15);
+    border: 1px solid rgba(196,126,107,0.4);
+    border-radius: 12px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: var(--rose);
+    margin-top: 10px;
+  }
+
+  /* ── 今日の天体ピル ── */
+  .planets-row {
+    width: calc(100% - 32px);
+    margin-bottom: 16px;
+    display: flex; flex-wrap: wrap; gap: 8px;
+  }
+  .planet-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(201,169,110,0.25);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.75);
+    transition: all 0.3s ease;
+    cursor: default;
+  }
+  .planet-pill:hover {
+    background: rgba(201,169,110,0.12);
+    border-color: rgba(201,169,110,0.5);
+    color: var(--gold-light);
+    transform: translateY(-2px);
+  }
+  .planet-pill .icon { font-size: 15px; }
+  .planet-pill.active {
+    background: rgba(201,169,110,0.18);
+    border-color: rgba(201,169,110,0.6);
+    color: var(--gold-light);
+    box-shadow: 0 0 12px rgba(201,169,110,0.15);
+  }
+
+  /* ── アドバイスカード ── */
+  .advice-cards {
+    width: calc(100% - 32px);
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .advice-card {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 18px;
+    padding: 18px 16px;
+    backdrop-filter: blur(12px);
+    transition: transform 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+    cursor: default;
+  }
+  .advice-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(201,169,110,0.5);
+    background: rgba(255,255,255,0.12);
+  }
+  .advice-card .icon { font-size: 26px; margin-bottom: 8px; }
+  .advice-card .a-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.55);
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .advice-card .a-text {
+    font-size: 12px;
+    color: rgba(255,255,255,0.92);
+    line-height: 1.6;
+  }
+
+  /* ── ボトムナビ ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 420px;
+    background: rgba(13,10,20,0.9);
+    border-top: 1px solid rgba(201,169,110,0.2);
+    backdrop-filter: blur(20px);
+    display: flex; justify-content: space-around; align-items: center;
+    padding: 12px 0 20px;
+    z-index: 100;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    opacity: 0.5;
+    min-width: 60px;
+  }
+  .nav-item.active { opacity: 1; }
+  .nav-item:hover { opacity: 0.85; }
+  .nav-icon { font-size: 22px; }
+  .nav-label {
+    font-size: 9px;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.08em;
+  }
+  .nav-item.active .nav-label { color: var(--gold-light); }
+
+  /* ── インタラクション：カード翻転 ── */
+  .flip-hint {
+    font-size: 10px;
+    color: rgba(201,169,110,0.5);
+    text-align: center;
+    margin-top: 6px;
+    letter-spacing: 0.1em;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  /* ── 光の粒子エフェクト ── */
+  .sparkle {
+    position: absolute;
+    pointer-events: none;
+    animation: sparkleAnim 1.5s ease-out forwards;
+  }
+  @keyframes sparkleAnim {
+    0% { opacity: 1; transform: scale(1) translateY(0); }
+    100% { opacity: 0; transform: scale(0.3) translateY(-30px); }
+  }
+
+  /* ── 月齢バナー ── */
+  .moon-banner {
+    width: calc(100% - 32px);
+    background: linear-gradient(135deg, rgba(50,30,80,0.6), rgba(20,20,50,0.6));
+    border: 1px solid rgba(180,150,255,0.25);
+    border-radius: 16px;
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 16px;
+  }
+  .moon-icon { font-size: 32px; }
+  .moon-text { flex: 1; }
+  .moon-text .m-title { font-size: 12px; color: rgba(220,200,255,0.9); margin-bottom: 3px; }
+  .moon-text .m-sub { font-size: 11px; color: rgba(180,160,255,0.7); }
+
+  /* ── 出生データ入力画面 ── */
+  #onboardingScreen {
+    position: fixed; inset: 0; z-index: 8000;
+    background: linear-gradient(160deg, #0d0a14 0%, #1c1228 50%, #0a1020 100%);
+    display: flex; flex-direction: column; align-items: center;
+    overflow-y: auto; padding: 0 0 60px;
+  }
+  .ob-header {
+    width: 100%; max-width: 420px;
+    padding: 48px 28px 24px;
+    text-align: center;
+  }
+  .ob-logo {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 28px;
+    color: var(--gold-light);
+    text-shadow: 0 0 30px rgba(201,169,110,0.5);
+    margin-bottom: 8px;
+  }
+  .ob-tagline {
+    font-size: 12px;
+    color: rgba(200,180,255,0.7);
+    letter-spacing: 0.14em;
+  }
+  .ob-moon-deco {
+    font-size: 64px;
+    margin: 16px 0;
+    animation: float 6s ease-in-out infinite;
+  }
+  .ob-card {
+    width: calc(100% - 32px); max-width: 388px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,169,110,0.3);
+    border-radius: 24px;
+    padding: 28px 24px;
+    backdrop-filter: blur(12px);
+  }
+  .ob-section-title {
+    font-size: 10px; letter-spacing: 0.18em;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ob-section-title::before, .ob-section-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(201,169,110,0.4),transparent);
+  }
+  .ob-field { margin-bottom: 18px; }
+  .ob-label {
+    display: block;
+    font-size: 11px; color: rgba(255,255,255,0.55);
+    letter-spacing: 0.08em; margin-bottom: 7px;
+  }
+  .ob-input, .ob-select {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 12px;
+    padding: 12px 16px;
+    color: #fff;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    -webkit-appearance: none;
+  }
+  .ob-input:focus, .ob-select:focus {
+    border-color: rgba(201,169,110,0.6);
+    box-shadow: 0 0 0 3px rgba(201,169,110,0.1);
+  }
+  .ob-select option { background: #1c1228; color: #fff; }
+  .ob-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .ob-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .ob-hint {
+    font-size: 10px; color: rgba(255,255,255,0.3);
+    margin-top: 5px; line-height: 1.5;
+  }
+  .ob-time-unknown {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 8px;
+  }
+  .ob-time-unknown input[type=checkbox] { accent-color: var(--gold); width:14px; height:14px; }
+  .ob-time-unknown label { font-size:11px; color:rgba(255,255,255,0.45); cursor:pointer; }
+
+  .ob-submit {
+    width: 100%; margin-top: 10px;
+    background: linear-gradient(135deg, #C9A96E, #F0D9A8, #C9A96E);
+    background-size: 200% 100%;
+    border: none; border-radius: 16px;
+    padding: 16px;
+    color: #1c1228;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    font-size: 15px; font-weight: 700;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: shimmer 3s linear infinite;
+  }
+  .ob-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(201,169,110,0.35);
+  }
+  .ob-submit:active { transform: translateY(0); }
+
+  .ob-privacy {
+    font-size: 10px; color: rgba(255,255,255,0.25);
+    text-align: center; margin-top: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── 広告エリア ── */
+  .ad-slot {<script type="text/javascript">rakuten_design="slide";rakuten_affiliateId="0b643e8d.506d4582.0b643e8e.39e44cdf";rakuten_items="ctsmatch";rakuten_genreId="0";rakuten_size="468x160";rakuten_target="_blank";rakuten_theme="gray";rakuten_border="off";rakuten_auto_mode="on";rakuten_genre_title="off";rakuten_recommend="on";rakuten_ts="1781051332659";</script><script type="text/javascript" src="https://xml.affiliate.rakuten.co.jp/widget/js/rakuten_widget.js?20230106"></script>
+  }
+  /* 実際の広告を貼るときは .ad-slot の中身を
+     Google AdSense等のコードに差し替えてください */
+
+  /* ── 月のバイオリズムセクション ── */
+  .bio-section {
+    width: calc(100% - 32px);
+    margin-bottom: 16px;
+  }
+  .bio-section-title {
+    font-size: 10px; letter-spacing: 0.18em; color: var(--gold);
+    text-transform: uppercase; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .bio-section-title::before, .bio-section-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(201,169,110,0.4), transparent);
+  }
+
+  /* 月相サイクル 28日ホイール */
+  .moon-cycle-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(180,150,255,0.2);
+    border-radius: 22px;
+    padding: 22px 20px 18px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .moon-cycle-card::before {
+    content: '';
+    position: absolute; top: -40px; left: 50%; transform: translateX(-50%);
+    width: 200px; height: 80px;
+    background: radial-gradient(ellipse, rgba(180,150,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* SVG月相ホイール */
+  .cycle-wheel-wrap {
+    display: flex; justify-content: center; margin-bottom: 18px;
+  }
+  .cycle-wheel { overflow: visible; }
+
+  /* 現在フェーズ大表示 */
+  .phase-hero {
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    margin-bottom: 16px;
+  }
+  .phase-moon-big {
+    font-size: 52px;
+    filter: drop-shadow(0 0 16px rgba(200,180,255,0.7));
+    animation: moonGlow 3s ease-in-out infinite alternate;
+  }
+  @keyframes moonGlow {
+    0%  { filter: drop-shadow(0 0 10px rgba(200,180,255,0.5)); }
+    100%{ filter: drop-shadow(0 0 24px rgba(220,200,255,0.9)); }
+  }
+  .phase-info { flex: 1; }
+  .phase-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px; color: #fff;
+    margin-bottom: 4px;
+  }
+  .phase-sub {
+    font-size: 11px; color: rgba(200,180,255,0.8);
+    line-height: 1.6;
+  }
+  .phase-day-badge {
+    background: rgba(180,150,255,0.15);
+    border: 1px solid rgba(180,150,255,0.35);
+    border-radius: 12px;
+    padding: 4px 10px;
+    font-size: 10px;
+    color: rgba(220,200,255,0.9);
+    margin-top: 6px;
+    display: inline-block;
+  }
+
+  /* 次の月相カウントダウン */
+  .next-phases {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    margin-bottom: 12px;
+  }
+  .next-phase-pill {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    transition: border-color 0.3s, transform 0.3s;
+    cursor: default;
+  }
+  .next-phase-pill:hover {
+    border-color: rgba(180,150,255,0.4);
+    transform: translateY(-2px);
+  }
+  .npp-icon { font-size: 22px; }
+  .npp-text {}
+  .npp-label { font-size: 9px; letter-spacing: 0.1em; color: rgba(180,150,255,0.7); margin-bottom: 3px; }
+  .npp-days  { font-size: 16px; font-weight: 700; color: #fff; }
+  .npp-date  { font-size: 10px; color: rgba(255,255,255,0.5); }
+
+  /* バイオリズム意味カード */
+  .bio-meaning {
+    background: linear-gradient(135deg, rgba(100,60,160,0.2), rgba(40,30,80,0.3));
+    border: 1px solid rgba(180,150,255,0.2);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  .bio-meaning .bm-phase { font-size: 10px; letter-spacing: 0.12em; color: rgba(200,180,255,0.7); margin-bottom: 8px; }
+  .bio-meaning .bm-title { font-size: 14px; font-weight: 700; color: rgba(230,220,255,0.95); margin-bottom: 6px; }
+  .bio-meaning .bm-body  { font-size: 12.5px; color: rgba(200,190,240,0.8); line-height: 1.75; }
+  .bio-meaning .bm-action {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(180,150,255,0.12);
+    border: 1px solid rgba(180,150,255,0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 11px; color: rgba(220,200,255,0.9);
+    margin-top: 10px;
+  }
+
+  /* 月星座ストリップ */
+  .moon-sign-strip {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .mss-icon { font-size: 26px; }
+  .mss-body { flex: 1; }
+  .mss-label { font-size: 9px; letter-spacing: 0.12em; color: var(--gold); margin-bottom: 4px; }
+  .mss-name  { font-size: 13px; color: #fff; margin-bottom: 4px; }
+  .mss-desc  { font-size: 11px; color: rgba(255,255,255,0.55); line-height: 1.6; }
+  .mss-money {
+    font-size: 10px;
+    background: rgba(201,169,110,0.12);
+    border: 1px solid rgba(201,169,110,0.3);
+    border-radius: 10px;
+    padding: 4px 10px;
+    color: var(--gold-light);
+    white-space: nowrap;
+  }
+
+  /* ── カレンダー画面 ── */
+  .cal-nav-btn {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px; padding: 8px 16px;
+    color: rgba(255,255,255,0.7); font-size: 14px; cursor: pointer;
+    transition: background 0.2s;
+  }
+  .cal-nav-btn:hover { background: rgba(201,169,110,0.15); }
+
+  .legend-row {
+    width: calc(100% - 32px);
+    display: flex; flex-wrap: wrap; align-items: center;
+    gap: 6px 14px; margin-bottom: 14px;
+  }
+  .legend-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; flex-shrink: 0;
+  }
+  .legend-label { font-size: 10px; color: rgba(255,255,255,0.5); }
+
+  .cal-week-header {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    text-align: center; font-size: 10px;
+    color: rgba(255,255,255,0.4); letter-spacing: 0.05em;
+    padding: 6px 0; margin-bottom: 4px;
+  }
+
+  .cal-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+
+  .cal-cell {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    cursor: pointer; position: relative;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid transparent;
+    transition: border-color 0.2s, background 0.2s;
+    min-height: 44px;
+  }
+  .cal-cell:hover { background: rgba(255,255,255,0.07); }
+  .cal-cell.today {
+    border-color: rgba(201,169,110,0.6);
+    background: rgba(201,169,110,0.1);
+  }
+  .cal-cell.selected {
+    border-color: rgba(201,169,110,0.9);
+    background: rgba(201,169,110,0.18);
+  }
+  .cal-cell.other-month { opacity: 0.25; }
+  .cal-cell.fusei { background: rgba(80,80,80,0.25); }
+
+  .cal-day-num {
+    font-size: 13px; font-weight: 500;
+    color: rgba(255,255,255,0.85);
+    line-height: 1;
+  }
+  .cal-cell.sunday  .cal-day-num { color: rgba(255,110,110,0.9); }
+  .cal-cell.saturday .cal-day-num { color: rgba(110,160,255,0.9); }
+  .cal-cell.today   .cal-day-num { color: var(--gold-light); }
+
+  .cal-rokuyou {
+    font-size: 7.5px; color: rgba(255,255,255,0.35);
+    margin-top: 2px; line-height: 1;
+  }
+
+  /* 日付下のドット */
+  .cal-dots {
+    display: flex; gap: 2px; margin-top: 2px;
+    justify-content: center; flex-wrap: wrap;
+    max-width: 28px;
+  }
+  .cal-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+  }
+
+  /* 選択日の詳細カード */
+  .cal-detail-card {
+    width: calc(100% - 32px);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(201,169,110,0.3);
+    border-radius: 20px; padding: 20px 20px;
+    margin: 14px 0 14px;
+  }
+  .cal-detail-date {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px; color: #fff;
+    margin-bottom: 10px;
+  }
+  .cal-detail-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 12px;
+  }
+  .cal-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    border-radius: 12px; padding: 4px 11px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+  }
+  .cal-tag.ichiryuu  { background:rgba(201,169,110,0.2); color:#F0D9A8; border:1px solid rgba(201,169,110,0.4); }
+  .cal-tag.astro     { background:rgba(155,111,255,0.2); color:#d4bbff; border:1px solid rgba(155,111,255,0.4); }
+  .cal-tag.tora      { background:rgba(232,196,184,0.2); color:#E8C4B8; border:1px solid rgba(232,196,184,0.4); }
+  .cal-tag.fusei     { background:rgba(100,100,100,0.2); color:#aaa;    border:1px solid rgba(150,150,150,0.3); }
+  .cal-tag.tensya    { background:rgba(100,200,150,0.2); color:#7ee8b0; border:1px solid rgba(100,200,150,0.4); }
+
+  .cal-detail-body {
+    font-size: 12.5px; color: rgba(255,255,255,0.7);
+    line-height: 1.8;
+  }
+
+  /* 今月の吉日リスト */
+  .lucky-list-card {
+    width: calc(100% - 32px);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 20px 18px;
+    margin-bottom: 16px;
+  }
+  .lucky-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .lucky-item:last-child { border-bottom: none; }
+  .lucky-item-date {
+    font-size: 13px; font-weight: 700;
+    color: var(--gold-light); min-width: 52px;
+  }
+  .lucky-item-body { flex: 1; }
+  .lucky-item-title { font-size: 12px; color: #fff; margin-bottom: 3px; }
+  .lucky-item-sub   { font-size: 10.5px; color: rgba(255,255,255,0.45); line-height: 1.5; }
+
+  /* ── 通知設定画面 ── */
+  .nt-section-title {
+    font-size: 10px; letter-spacing: 0.18em; color: var(--gold);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nt-section-title::before, .nt-section-title::after {
+    content:''; flex:1; height:1px;
+    background: linear-gradient(90deg,transparent,rgba(201,169,110,0.4),transparent);
+  }
+
+  /* 今日のアラートカード */
+  .nt-alert-card {
+    width: calc(100% - 32px);
+    background: linear-gradient(135deg, rgba(155,111,255,0.15), rgba(201,169,110,0.1));
+    border: 1px solid rgba(155,111,255,0.4);
+    border-radius: 22px; padding: 20px 20px;
+    display: flex; align-items: flex-start; gap: 16px;
+    margin-bottom: 20px;
+    animation: glowPulse 3s ease-in-out infinite;
+  }
+  @keyframes glowPulse {
+    0%,100% { box-shadow: 0 0 20px rgba(155,111,255,0.1); }
+    50%      { box-shadow: 0 0 40px rgba(155,111,255,0.25); }
+  }
+  .nt-alert-icon  { font-size: 36px; flex-shrink: 0; }
+  .nt-alert-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+  .nt-alert-text  { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.7; }
+
+  /* 通知モード選択カード */
+  .nt-mode-cards {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+  }
+  .nt-mode-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px; padding: 16px 10px;
+    text-align: center; cursor: pointer;
+    transition: all 0.25s ease; position: relative;
+  }
+  .nt-mode-card:hover { background: rgba(255,255,255,0.07); }
+  .nt-mode-card.active {
+    border-color: rgba(201,169,110,0.7);
+    background: rgba(201,169,110,0.12);
+    box-shadow: 0 0 20px rgba(201,169,110,0.15);
+  }
+  .nt-mode-icon  { font-size: 26px; margin-bottom: 8px; }
+  .nt-mode-label { font-size: 12px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+  .nt-mode-desc  { font-size: 9.5px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+  .nt-mode-check {
+    position: absolute; top: 8px; right: 8px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(201,169,110,0.8);
+    color: #1c1228; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* 予報リスト */
+  .nt-forecast-list {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px; overflow: hidden;
+  }
+  .nt-forecast-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    cursor: pointer; transition: background 0.2s;
+  }
+  .nt-forecast-item:last-child { border-bottom: none; }
+  .nt-forecast-item:hover { background: rgba(255,255,255,0.04); }
+  .nt-forecast-date {
+    font-size: 13px; font-weight: 700;
+    color: var(--gold-light); min-width: 64px;
+  }
+  .nt-forecast-icons { font-size: 14px; min-width: 52px; }
+  .nt-forecast-body  { flex: 1; }
+  .nt-forecast-title { font-size: 12px; color: #fff; margin-bottom: 2px; }
+  .nt-forecast-sub   { font-size: 10px; color: rgba(255,255,255,0.4); }
+  .nt-forecast-days  {
+    font-size: 10px; color: rgba(201,169,110,0.7);
+    text-align: right; white-space: nowrap;
+  }
+
+  /* 将来のプッシュ通知案内 */
+  .nt-future-card {
+    width: calc(100% - 32px);
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed rgba(255,255,255,0.12);
+    border-radius: 18px; padding: 22px 20px;
+    text-align: center; margin-bottom: 16px;
+  }
+
+</style>
+<style>
+  .md-profile-card {
+    width: calc(100% - 32px);
+    background: linear-gradient(135deg, rgba(201,169,110,0.1), rgba(155,111,255,0.08));
+    border: 1px solid rgba(201,169,110,0.3);
+    border-radius: 22px; padding: 20px 20px;
+    display: flex; align-items: center; gap: 16px;
+    margin-bottom: 20px;
+  }
+  .md-avatar {
+    font-size: 42px; flex-shrink: 0;
+    filter: drop-shadow(0 0 12px rgba(201,169,110,0.5));
+  }
+  .md-profile-info { flex: 1; min-width: 0; }
+  .md-name  { font-family:'Playfair Display',serif; font-size:18px; color:#fff; margin-bottom:4px; }
+  .md-birth { font-size:11px; color:rgba(255,255,255,0.55); margin-bottom:2px; }
+  .md-place { font-size:11px; color:rgba(255,255,255,0.4); }
+  .md-edit-btn {
+    flex-shrink: 0;
+    background: rgba(201,169,110,0.15);
+    border: 1px solid rgba(201,169,110,0.4);
+    border-radius: 12px; padding: 7px 14px;
+    color: var(--gold-light); font-size: 12px; cursor: pointer;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    white-space: nowrap;
+    transition: background 0.2s;
+  }
+  .md-edit-btn:hover { background: rgba(201,169,110,0.28); }
+
+  .md-section-title {
+    width: calc(100% - 32px);
+    font-size: 10px; letter-spacing: 0.18em; color: var(--gold);
+    text-transform: uppercase; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .md-section-title::before, .md-section-title::after {
+    content:''; flex:1; height:1px;
+    background: linear-gradient(90deg,transparent,rgba(201,169,110,0.4),transparent);
+  }
+
+  .md-chart-card {
+    width: calc(100% - 32px);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 22px; padding: 24px 16px 18px;
+    margin-bottom: 20px;
+  }
+  .md-chart-legend {
+    display: flex; flex-wrap: wrap; gap: 6px 14px;
+    justify-content: center; margin-top: 16px;
+  }
+  .md-legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: rgba(255,255,255,0.5);
+  }
+  .md-legend-dot {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+
+  .md-table-card {
+    width: calc(100% - 32px);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 18px; overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .md-table-row {
+    display: flex; align-items: center;
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    transition: background 0.2s;
+  }
+  .md-table-row:last-child { border-bottom: none; }
+  .md-table-row:hover { background: rgba(255,255,255,0.04); }
+  .md-table-sym  { font-size:16px; width:26px; flex-shrink:0; }
+  .md-table-name { font-size:11px; color:rgba(255,255,255,0.5); width:56px; flex-shrink:0; }
+  .md-table-sign { font-size:13px; color:#fff; flex:1; }
+  .md-table-deg  { font-size:11px; color:rgba(255,255,255,0.35); text-align:right; }
+  .md-table-badge {
+    font-size:9px; padding:2px 8px; border-radius:8px;
+    background:rgba(201,169,110,0.15); color:var(--gold-light);
+    border:1px solid rgba(201,169,110,0.3); margin-left:6px;
+    white-space: nowrap;
+  }
+
+  .md-money-type-card {
+    width: calc(100% - 32px);
+    border-radius: 20px; padding: 22px 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(201,169,110,0.25);
+    background: linear-gradient(135deg,rgba(30,20,50,0.8),rgba(20,30,50,0.8));
+  }
+  .md-type-emoji { font-size:48px; margin-bottom:12px; text-align:center; }
+  .md-type-title {
+    font-family:'Playfair Display',serif; font-size:18px;
+    color:var(--gold-light); text-align:center; margin-bottom:8px;
+  }
+  .md-type-sub {
+    font-size:11px; color:rgba(201,169,110,0.7);
+    text-align:center; letter-spacing:0.1em; margin-bottom:14px;
+  }
+  .md-type-body {
+    font-size:12.5px; color:rgba(255,255,255,0.75);
+    line-height:1.85;
+  }
+  .md-type-tags {
+    display:flex; flex-wrap:wrap; gap:6px; margin-top:14px;
+  }
+  .md-type-tag {
+    font-size:10px; padding:4px 12px; border-radius:12px;
+    background:rgba(201,169,110,0.12);
+    border:1px solid rgba(201,169,110,0.3);
+    color:var(--gold-light);
+  }
+
+  /* ── 楽天アフィリエイトバナー枠 ── */
+  .rakuten-banner {
+    width: calc(100% - 32px);
+    margin-bottom: 16px;
+  }
+  .rakuten-banner-label {
+    font-size: 9px; letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.2);
+    text-align: right; margin-bottom: 5px;
+  }
+  .rakuten-banner-inner {
+    border-radius: 14px; overflow: hidden;
+    min-height: 90px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed rgba(255,80,80,0.2);
+  }
+  .rakuten-placeholder {
+    text-align: center; padding: 16px 12px;
+  }
+  .rakuten-placeholder .rp-icon  { font-size: 20px; margin-bottom: 5px; }
+  .rakuten-placeholder .rp-title { font-size: 11px; color:rgba(255,100,100,0.45); margin-bottom:3px; font-weight:700; }
+  .rakuten-placeholder .rp-desc  { font-size: 10px; color:rgba(255,255,255,0.18); line-height:1.5; }
+
+  /* 旧広告スロットは非表示 */
+  #adSlot1 { display: none; }
+
+</style>
+</head>
+<body>
+
+<div class="starfield"></div>
+
+<!-- ═══════════════════════════════════════════
+     👤 出生データ入力画面（初回 / 未登録時に表示）
+     ═══════════════════════════════════════════ -->
+<div id="onboardingScreen" style="display:none;">
+  <div class="ob-header">
+    <div class="ob-logo">✦ 金星ノート</div>
+    <div class="ob-tagline">あなただけの星読み金運アプリ</div>
+    <div class="ob-moon-deco">🌙</div>
+  </div>
+
+  <div class="ob-card">
+    <div class="ob-section-title">✦ 出生データを登録</div>
+
+    <!-- 生年月日 -->
+    <div class="ob-field">
+      <label class="ob-label">生年月日</label>
+      <div class="ob-row3">
+        <div>
+          <input class="ob-input" id="ob_year"  type="number" placeholder="1990" min="1900" max="2025" inputmode="numeric">
+          <div class="ob-hint">年</div>
+        </div>
+        <div>
+          <select class="ob-select" id="ob_month">
+            <option value="">月</option>
+            <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+            <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+            <option value="7">7月</option><option value="8">8月</option><option value="9">9月</option>
+            <option value="10">10月</option><option value="11">11月</option><option value="12">12月</option>
+          </select>
+        </div>
+        <div>
+          <input class="ob-input" id="ob_day" type="number" placeholder="15" min="1" max="31" inputmode="numeric">
+          <div class="ob-hint">日</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 出生時刻 -->
+    <div class="ob-field">
+      <label class="ob-label">出生時刻（わかる場合）</label>
+      <div class="ob-row" id="ob_time_row">
+        <div>
+          <input class="ob-input" id="ob_hour"   type="number" placeholder="10" min="0" max="23" inputmode="numeric">
+          <div class="ob-hint">時</div>
+        </div>
+        <div>
+          <input class="ob-input" id="ob_minute" type="number" placeholder="30" min="0" max="59" inputmode="numeric">
+          <div class="ob-hint">分</div>
+        </div>
+      </div>
+      <div class="ob-time-unknown">
+        <input type="checkbox" id="ob_time_unknown" onchange="toggleTimeInput(this)">
+        <label for="ob_time_unknown">出生時刻がわからない（正午12:00で計算）</label>
+      </div>
+      <div class="ob-hint" style="margin-top:8px;">⚡ ASC・MCの計算には出生時刻が必要です。出生証明書や母子手帳で確認してみて。</div>
+    </div>
+
+    <!-- 出生地：都道府県 → 市区町村の2段階選択 -->
+    <div class="ob-field">
+      <label class="ob-label">出生地（都道府県）</label>
+      <select class="ob-select" id="ob_pref" onchange="onPrefChange(this.value)">
+        <option value="">都道府県を選択</option>
+      </select>
+    </div>
+    <div class="ob-field" id="ob_city_field" style="display:none;">
+      <label class="ob-label">市区町村</label>
+      <select class="ob-select" id="ob_city" onchange="onCityChange(this.value)">
+        <option value="">市区町村を選択</option>
+      </select>
+    </div>
+    <!-- 座標は非表示で保持（hidden） -->
+    <input type="hidden" id="ob_lat">
+    <input type="hidden" id="ob_lon">
+    <input type="hidden" id="ob_tz" value="9">
+
+    <!-- ニックネーム -->
+    <div class="ob-field">
+      <label class="ob-label">ニックネーム（任意）</label>
+      <input class="ob-input" id="ob_name" type="text" placeholder="星見るこ" maxlength="20">
+    </div>
+
+    <button class="ob-submit" onclick="submitBirthData()">
+      ✦ 星盤を作る ✦
+    </button>
+    <div class="ob-privacy">
+      ✦ 入力データはあなたのブラウザ内にのみ保存されます（サーバーには送信されません）
+    </div>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- ヘッダー -->
+  <header>
+    <div class="app-name">✦ 金運ホロスコープ</div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;">
+        <div class="date-badge" id="todayDate">読み込み中…</div>
+        <div style="font-size:9px;color:rgba(201,169,110,0.6);letter-spacing:0.08em;" id="app-username"></div>
+      </div>
+      <!-- 鉛筆ボタン：ヘッダー右端に常時表示 -->
+      <div id="editProfileBtn"
+           style="display:none; width:36px; height:36px; border-radius:50%;
+                  background:rgba(201,169,110,0.15); border:1px solid rgba(201,169,110,0.4);
+                  align-items:center; justify-content:center;
+                  font-size:16px; cursor:pointer; flex-shrink:0;
+                  transition:background 0.2s;"
+           onclick="showOnboarding(true)"
+           title="出生データを編集">✎</div>
+    </div>
+  </header>
+
+  <!-- メインカード（金運カード＋スコア） -->
+  <div class="main-card">
+    <div class="card-label">今日の金運カード</div>
+
+    <div class="tarot-zone">
+      <div class="tarot-card" id="tarotCard" onclick="sparkleEffect(this)">
+        <div class="card-border"></div>
+        <div class="tarot-symbol" id="tarotSymbol">🌙</div>
+        <div class="tarot-name" id="tarotName">計算中…</div>
+      </div>
+      <div class="card-text-zone">
+        <div class="card-title" id="cardTitle">星盤を<br>読み込み中</div>
+        <div class="card-subtitle" id="cardSubtitle">しばらく<br>お待ちください</div>
+      </div>
+    </div>
+    <div class="flip-hint">✦ カードをタップ ✦</div>
+
+    <!-- スコアバー -->
+    <div class="score-section" style="margin-top: 20px;">
+      <div class="score-row">
+        <div class="score-label">💛 金運</div>
+        <div class="score-bar-wrap">
+          <div class="score-bar gold" id="moneyBar" style="width: 0%;"></div>
+        </div>
+        <div class="score-stars" id="moneyStars">☆☆☆☆☆</div>
+      </div>
+      <div class="score-row" style="margin-bottom: 0;">
+        <div class="score-label">🔥 勝負運</div>
+        <div class="score-bar-wrap">
+          <div class="score-bar rose" id="battleBar" style="width: 0%;"></div>
+        </div>
+        <div class="score-stars" id="battleStars">☆☆☆☆☆</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 月齢バナー -->
+  <div class="moon-banner">
+    <div class="moon-icon" id="moonIcon">🌙</div>
+    <div class="moon-text">
+      <div class="m-title" id="moonTitle">計算中…</div>
+      <div class="m-sub" id="moonSub">出生データを読み込んでいます</div>
+    </div>
+  </div>
+
+  <!-- 天体活性ピル -->
+  <div class="planets-row" id="planetPills">
+    <div class="planet-pill">計算中…</div>
+  </div>
+
+  <!-- 解説テキスト -->
+  <div class="desc-card">
+    <div class="desc-title"><span>✨</span> 今日のエネルギー読み</div>
+    <div class="desc-body" id="descBody">星盤を計算中です…</div>
+    <div class="warning-badge" id="warningBadge" style="display:none;"></div>
+  </div>
+
+  <!-- 月のバイオリズムセクション -->
+  <div class="bio-section">
+    <div class="bio-section-title">🌙 月のバイオリズム</div>
+    <div class="moon-cycle-card">
+      <div class="cycle-wheel-wrap">
+        <svg class="cycle-wheel" width="260" height="260" viewBox="-130 -130 260 260" id="moonWheelSVG">
+          <circle cx="0" cy="0" r="118" fill="none" stroke="rgba(180,150,255,0.12)" stroke-width="1"/>
+          <circle cx="0" cy="0" r="90"  fill="none" stroke="rgba(180,150,255,0.08)" stroke-width="1" stroke-dasharray="4 4"/>
+          <g id="moonDots"></g>
+          <g id="todayMarker"></g>
+          <text x="0" y="-8"  text-anchor="middle" font-size="28" id="centerMoonEmoji">🌕</text>
+          <text x="0" y="16"  text-anchor="middle" font-size="10" fill="rgba(220,200,255,0.7)" id="centerDayText">Day 15</text>
+          <text x="0" y="30"  text-anchor="middle" font-size="9"  fill="rgba(180,160,255,0.5)" id="centerPhaseText">満月</text>
+        </svg>
+      </div>
+      <div class="phase-hero">
+        <div class="phase-moon-big" id="phaseMoonBig">🌕</div>
+        <div class="phase-info">
+          <div class="phase-name" id="phaseName">満月</div>
+          <div class="phase-sub" id="phaseSignText">てんびん座 11° 通過中</div>
+          <div class="phase-day-badge" id="phaseDayBadge">サイクル Day 15 / 29.5</div>
+        </div>
+      </div>
+      <div class="next-phases" id="nextPhasesGrid"></div>
+    </div>
+    <div class="bio-meaning" id="bioMeaning">
+      <div class="bm-phase" id="bmPhaseLabel">🌕 満月フェーズ（Day 13〜16）</div>
+      <div class="bm-title" id="bmTitle">引き寄せのピーク・収穫の時</div>
+      <div class="bm-body" id="bmBody">読み込み中...</div>
+      <div class="bm-action" id="bmAction"></div>
+    </div>
+    <div class="moon-sign-strip" id="moonSignStrip">
+      <div class="mss-icon" id="mssIcon">☽</div>
+      <div class="mss-body">
+        <div class="mss-label">MOON SIGN</div>
+        <div class="mss-name" id="mssName">読み込み中...</div>
+        <div class="mss-desc" id="mssDesc"></div>
+      </div>
+      <div class="mss-money" id="mssMoney">金運 —</div>
+    </div>
+  </div>
+
+  <!-- アドバイスカード -->
+  <div class="advice-cards">
+    <div class="advice-card">
+      <div class="icon" id="adviceActionIcon">💳</div>
+      <div class="a-label">TODAY'S ACTION</div>
+      <div class="a-text" id="adviceAction">読み込み中…</div>
+    </div>
+    <div class="advice-card">
+      <div class="icon" id="adviceAvoidIcon">🌿</div>
+      <div class="a-label">AVOID TODAY</div>
+      <div class="a-text" id="adviceAvoid">読み込み中…</div>
+    </div>
+    <div class="advice-card">
+      <div class="icon" id="adviceLuckyIcon">🔮</div>
+      <div class="a-label">LUCKY ITEM</div>
+      <div class="a-text" id="adviceLucky">読み込み中…</div>
+    </div>
+    <div class="advice-card">
+      <div class="icon" id="advicePeakIcon">⏰</div>
+      <div class="a-label">PEAK TIME</div>
+      <div class="a-text" id="advicePeak">読み込み中…</div>
+    </div>
+  </div>
+
+  <!-- ══ 楽天アフィリエイト バナー①（メイン画面）══ -->
+  <div class="rakuten-banner">
+    <div class="rakuten-banner-label">PR・広告</div>
+    <div class="rakuten-banner-inner has-content">
+      <script type="text/javascript">rakuten_design="slide";rakuten_affiliateId="0b643e8d.506d4582.0b643e8e.39e44cdf";rakuten_items="ctsmatch";rakuten_genreId="0";rakuten_size="468x160";rakuten_target="_blank";rakuten_theme="gray";rakuten_border="off";rakuten_auto_mode="on";rakuten_genre_title="off";rakuten_recommend="on";rakuten_ts="1780992708736";</script><script type="text/javascript" src="https://xml.affiliate.rakuten.co.jp/widget/js/rakuten_widget.js?20230106"></script>
+    </div>
+  </div>
+
+</div><!-- /.page （メイン画面） -->
+
+<!-- ═══════════════════════════════════════════
+     📅 カレンダー画面
+     ═══════════════════════════════════════════ -->
+<div id="calendarPage" class="page" style="display:none;">
+
+  <!-- ヘッダー -->
+  <header>
+    <div class="app-name">✦ 吉日カレンダー</div>
+    <div class="date-badge" id="calMonthLabel">2026年6月</div>
+  </header>
+
+  <!-- 月切り替えナビ -->
+  <div style="width:calc(100% - 32px); display:flex; align-items:center;
+              justify-content:space-between; margin-bottom:16px;">
+    <button class="cal-nav-btn" onclick="changeMonth(-1)">◀</button>
+    <div style="font-size:13px; color:rgba(255,255,255,0.7); letter-spacing:0.1em;"
+         id="calMonthTitle">2026年6月</div>
+    <button class="cal-nav-btn" onclick="changeMonth(1)">▶</button>
+  </div>
+
+  <!-- 凡例 -->
+  <div class="legend-row">
+    <span class="legend-dot" style="background:#C9A96E;"></span><span class="legend-label">一粒万倍日</span>
+    <span class="legend-dot" style="background:#9b6fff;"></span><span class="legend-label">🌟個人最強 💫吉日 🌙月次</span>
+    <span class="legend-dot" style="background:#E8C4B8;"></span><span class="legend-label">🐅寅・🐍巳の日</span>
+    <span class="legend-dot" style="background:#555;"></span><span class="legend-label">不成就日</span>
+  </div>
+
+  <!-- カレンダーグリッド -->
+  <div style="width:calc(100% - 32px);">
+    <!-- 曜日ヘッダー -->
+    <div class="cal-week-header">
+      <div style="color:rgba(255,100,100,0.8);">日</div>
+      <div>月</div><div>火</div><div>水</div><div>木</div><div>金</div>
+      <div style="color:rgba(100,160,255,0.8);">土</div>
+    </div>
+    <!-- 日付グリッド -->
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <!-- 選択日の詳細 -->
+  <div class="cal-detail-card" id="calDetailCard" style="display:none;">
+    <div class="cal-detail-date" id="calDetailDate"></div>
+    <div class="cal-detail-tags" id="calDetailTags"></div>
+    <div class="cal-detail-body" id="calDetailBody"></div>
+  </div>
+
+  <!-- 今月の吉日リスト -->
+  <div class="lucky-list-card">
+    <div class="bio-section-title">✦ 今月の注目吉日</div>
+    <div id="luckyDaysList"></div>
+  </div>
+
+  <!-- ══ 楽天アフィリエイト バナー②（カレンダー画面）══ -->
+  <div class="rakuten-banner">
+    <div class="rakuten-banner-label">PR・広告</div>
+    <div class="rakuten-banner-inner has-content">
+      <script type="text/javascript">rakuten_design="slide";rakuten_affiliateId="0b643e8d.506d4582.0b643e8e.39e44cdf";rakuten_items="ctsmatch";rakuten_genreId="0";rakuten_size="468x160";rakuten_target="_blank";rakuten_theme="gray";rakuten_border="off";rakuten_auto_mode="on";rakuten_genre_title="off";rakuten_recommend="on";rakuten_ts="1780992708736";</script><script type="text/javascript" src="https://xml.affiliate.rakuten.co.jp/widget/js/rakuten_widget.js?20230106"></script>
+    </div>
+  </div>
+
+  <div style="height:20px;"></div>
+</div><!-- /.calendarPage -->
+
+
+<!-- ═══════════════════════════════════════════
+     👤 マイデータ画面
+     ═══════════════════════════════════════════ -->
+<div id="mydataPage" class="page" style="display:none;">
+
+  <!-- ヘッダー -->
+  <header>
+    <div class="app-name">✦ マイ星盤</div>
+    <div id="mydataNameBadge" class="date-badge">—</div>
+  </header>
+
+  <!-- プロフィールカード -->
+  <div class="md-profile-card">
+    <div class="md-avatar" id="mdAvatar">🌟</div>
+    <div class="md-profile-info">
+      <div class="md-name"    id="mdName">—</div>
+      <div class="md-birth"   id="mdBirth">—</div>
+      <div class="md-place"   id="mdPlace">—</div>
+    </div>
+    <button class="md-edit-btn" onclick="showOnboarding(true)">✎ 編集</button>
+  </div>
+
+  <!-- ネイタルチャート（SVGホイール） -->
+  <div class="md-section-title">✦ ネイタルチャート</div>
+  <div class="md-chart-card">
+    <svg id="natalChartSVG" width="300" height="300"
+         viewBox="-150 -150 300 300"
+         style="overflow:visible; display:block; margin:0 auto;">
+      <!-- JSで描画 -->
+    </svg>
+    <div class="md-chart-legend" id="mdChartLegend"></div>
+  </div>
+
+  <!-- 天体一覧テーブル -->
+  <div class="md-section-title">✦ 出生時の天体位置</div>
+  <div class="md-table-card" id="mdPlanetTable"></div>
+
+  <!-- ハウス情報 -->
+  <div class="md-section-title">✦ ハウス情報</div>
+  <div class="md-table-card" id="mdHouseTable"></div>
+
+  <!-- あなたの星座キャラクター -->
+  <div class="md-section-title">✦ あなたのお金タイプ</div>
+  <div class="md-money-type-card" id="mdMoneyType"></div>
+
+  <div style="height:20px;"></div>
+</div><!-- /#mydataPage -->
+
+<!-- ═══════════════════════════════════════════
+     🔔 通知設定画面
+     ═══════════════════════════════════════════ -->
+<div id="notifyPage" class="page" style="display:none;">
+
+  <!-- ヘッダー -->
+  <header>
+    <div class="app-name">✦ 通知設定</div>
+    <div class="date-badge">アプリ内通知</div>
+  </header>
+
+  <!-- 今日のアラートカード -->
+  <div class="nt-alert-card" id="ntTodayAlert" style="display:none;">
+    <div class="nt-alert-icon" id="ntAlertIcon">🌟</div>
+    <div class="nt-alert-body">
+      <div class="nt-alert-title" id="ntAlertTitle">今日の金運アラート</div>
+      <div class="nt-alert-text"  id="ntAlertText">読み込み中…</div>
+    </div>
+  </div>
+
+  <!-- 通知モード選択 -->
+  <div style="width:calc(100% - 32px); margin-bottom:16px;">
+    <div class="nt-section-title">✦ 通知モード</div>
+    <div class="nt-mode-cards" id="ntModeCards">
+      <div class="nt-mode-card" id="ntMode-every" onclick="setNotifyMode('every')">
+        <div class="nt-mode-icon">🌙</div>
+        <div class="nt-mode-label">毎日通知</div>
+        <div class="nt-mode-desc">アプリを開くたびに<br>今日の金運を表示</div>
+        <div class="nt-mode-check" id="ntCheck-every">✓</div>
+      </div>
+      <div class="nt-mode-card" id="ntMode-lucky" onclick="setNotifyMode('lucky')">
+        <div class="nt-mode-icon">🌟</div>
+        <div class="nt-mode-label">吉日だけ</div>
+        <div class="nt-mode-desc">吉日・金運強化日のみ<br>アラートを表示</div>
+        <div class="nt-mode-check" id="ntCheck-lucky" style="display:none;">✓</div>
+      </div>
+      <div class="nt-mode-card" id="ntMode-off" onclick="setNotifyMode('off')">
+        <div class="nt-mode-icon">🔕</div>
+        <div class="nt-mode-label">オフ</div>
+        <div class="nt-mode-desc">アラートを<br>表示しない</div>
+        <div class="nt-mode-check" id="ntCheck-off" style="display:none;">✓</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 今月の吉日プレビュー -->
+  <div style="width:calc(100% - 32px); margin-bottom:16px;">
+    <div class="nt-section-title">✦ 今後の金運アラート予報</div>
+    <div class="nt-forecast-list" id="ntForecastList"></div>
+  </div>
+
+  <!-- ══ 楽天アフィリエイト バナー③（通知画面）══ -->
+  <div class="rakuten-banner">
+    <div class="rakuten-banner-label">PR・広告</div>
+    <div class="rakuten-banner-inner has-content">
+      <script type="text/javascript">rakuten_design="slide";rakuten_affiliateId="0b643e8d.506d4582.0b643e8e.39e44cdf";rakuten_items="ctsmatch";rakuten_genreId="0";rakuten_size="468x160";rakuten_target="_blank";rakuten_theme="gray";rakuten_border="off";rakuten_auto_mode="on";rakuten_genre_title="off";rakuten_recommend="on";rakuten_ts="1780992708736";</script><script type="text/javascript" src="https://xml.affiliate.rakuten.co.jp/widget/js/rakuten_widget.js?20230106"></script>
+    </div>
+  </div>
+
+  <!-- 将来のプッシュ通知案内 -->
+  <div class="nt-future-card">
+    <div style="font-size:24px; margin-bottom:10px;">🔔</div>
+    <div style="font-size:13px; color:rgba(255,255,255,0.8); margin-bottom:6px; font-weight:700;">
+      毎朝届くプッシュ通知（準備中）
+    </div>
+    <div style="font-size:11px; color:rgba(255,255,255,0.45); line-height:1.7;">
+      アプリをサーバーに載せた後、<br>
+      毎朝8時に自動でお知らせする<br>
+      本格プッシュ通知を追加予定です✨
+    </div>
+  </div>
+
+  <div style="height:20px;"></div>
+</div><!-- /#notifyPage -->
+
+<!-- ボトムナビ -->
+<div class="bottom-nav">
+  <div class="nav-item active" id="nav-today" onclick="switchTab('today')">
+    <div class="nav-icon">✦</div>
+    <div class="nav-label">今日</div>
+  </div>
+  <div class="nav-item" id="nav-calendar" onclick="switchTab('calendar')">
+    <div class="nav-icon">📅</div>
+    <div class="nav-label">カレンダー</div>
+  </div>
+  <div class="nav-item" id="nav-mydata" onclick="switchTab('mydata')">
+    <div class="nav-icon">👤</div>
+    <div class="nav-label">マイデータ</div>
+  </div>
+  <div class="nav-item" id="nav-notify" onclick="switchTab('notify')">
+    <div class="nav-icon">🔔</div>
+    <div class="nav-label">通知</div>
+  </div>
+</div>
+
+
+<!-- ========================================================
+     🔭 天体計算ライブラリ
+     astronomy-engine (NASA JPL精度・MIT License・ブラウザ対応)
+     ※ moshier-ephemerisはNode.js専用のためブラウザ非対応。
+       同等アルゴリズムをブラウザで使えるのがastronomy-engine。
+     ======================================================== -->
+<script src="https://cdn.jsdelivr.net/npm/astronomy-engine@2.1.19/astronomy.browser.min.js"></script>
+
+<!-- ローディングオーバーレイ -->
+<div id="loadingOverlay" style="
+  position:fixed; inset:0; z-index:9999;
+  background:linear-gradient(160deg,#0d0a14,#1c1228);
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px;
+">
+  <div style="font-size:52px; animation:moonGlow 1.5s ease-in-out infinite alternate;">🌙</div>
+  <div style="font-family:'Zen Kaku Gothic New',sans-serif; color:rgba(200,180,255,0.85); font-size:14px; letter-spacing:0.12em;">天体を計算しています…</div>
+  <div style="width:160px; height:3px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+    <div id="loadBar" style="height:100%; width:0%; background:linear-gradient(90deg,#9b6fff,#c9a96e); border-radius:2px; transition:width 0.4s ease;"></div>
+  </div>
+</div>
+
+<!-- ========================================================
+     🔮 占星術ロジック（JavaScript）
+     ======================================================== -->
+<script>
+// ============================================================
+// 【金運アラートアプリ】占星術スコアリング・エンジン
+// 天体計算: astronomy-engine v2.1.19 (NASA JPL精度・MIT License)
+// ============================================================
+
+
+// ============================================================
+// ── 1. ユーザーの出生データ管理（localStorage）
+// ============================================================
+const STORAGE_KEY = 'kinsei_note_birth';
+
+/** localStorageから出生データを読み込む。なければnullを返す */
+function loadBirthConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch(e) { return null; }
+}
+
+/** 出生データをlocalStorageに保存 */
+function saveBirthConfig(cfg) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg)); } catch(e) {}
+}
+
+/** 出生データを削除（リセット用） */
+function clearBirthConfig() {
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+
+// ============================================================
+// ── 2. 入力画面の制御
+// ============================================================
+
+/** 出生時刻「不明」チェックボックス */
+function toggleTimeInput(cb) {
+  const row = document.getElementById('ob_time_row');
+  row.style.opacity = cb.checked ? '0.3' : '1';
+  row.style.pointerEvents = cb.checked ? 'none' : 'auto';
+}
+
+// ============================================================
+// 🗾 全47都道府県 × 主要市区町村 座標データベース
+//    形式: "緯度,経度"  タイムゾーンは全国 UTC+9 固定
+// ============================================================
+const JAPAN_CITIES = {
+  '北海道':     { rep:[43.0618,141.3545], cities:{ '札幌市':[43.0618,141.3545],'函館市':[41.7688,140.7291],'旭川市':[43.7706,142.3651],'釧路市':[42.9849,144.3820],'帯広市':[42.9241,143.1966],'北見市':[43.8035,143.8907],'苫小牧市':[42.6333,141.6051],'小樽市':[43.1907,140.9946],'室蘭市':[42.3153,140.9736],'江別市':[43.1034,141.5273] }},
+  '青森県':     { rep:[40.8244,140.7400], cities:{ '青森市':[40.8244,140.7400],'弘前市':[40.6031,140.4645],'八戸市':[40.5124,141.4883],'十和田市':[40.6126,141.2044],'三沢市':[40.6827,141.3684],'むつ市':[41.2924,141.1841] }},
+  '岩手県':     { rep:[39.7036,141.1527], cities:{ '盛岡市':[39.7036,141.1527],'一関市':[38.9340,141.1266],'奥州市':[39.1441,141.1372],'花巻市':[39.3881,141.1170],'北上市':[39.2861,141.1152],'宮古市':[39.6416,141.9546],'久慈市':[40.1906,141.7757],'釜石市':[39.2754,141.8861] }},
+  '宮城県':     { rep:[38.2688,140.8721], cities:{ '仙台市':[38.2688,140.8721],'石巻市':[38.4344,141.3026],'塩竈市':[38.3149,141.0218],'気仙沼市':[38.9078,141.5703],'白石市':[38.0036,140.6198],'名取市':[38.1721,140.8883],'多賀城市':[38.2944,141.0027],'岩沼市':[38.1020,140.8716] }},
+  '秋田県':     { rep:[39.7186,140.1023], cities:{ '秋田市':[39.7186,140.1023],'能代市':[40.2128,140.0274],'横手市':[39.3111,140.5649],'大館市':[40.2741,140.5624],'男鹿市':[39.8805,139.8441],'湯沢市':[39.1592,140.4924],'大仙市':[39.4553,140.5023] }},
+  '山形県':     { rep:[38.2404,140.3634], cities:{ '山形市':[38.2404,140.3634],'米沢市':[37.9155,140.1165],'鶴岡市':[38.7268,139.8276],'酒田市':[38.9140,139.8365],'新庄市':[38.7594,140.3029],'寒河江市':[38.3742,140.2824],'天童市':[38.3626,140.3779] }},
+  '福島県':     { rep:[37.7503,140.4676], cities:{ '福島市':[37.7503,140.4676],'会津若松市':[37.4953,139.9298],'郡山市':[37.3939,140.3870],'いわき市':[37.0500,140.8877],'白河市':[37.1268,140.2798],'須賀川市':[37.2980,140.3844],'喜多方市':[37.6536,139.8754],'相馬市':[37.7956,140.9200] }},
+  '茨城県':     { rep:[36.3418,140.4468], cities:{ '水戸市':[36.3418,140.4468],'日立市':[36.5990,140.6510],'土浦市':[36.0746,140.2031],'古河市':[36.1897,139.7073],'石岡市':[36.1904,140.2874],'結城市':[36.3044,139.8838],'龍ケ崎市':[35.9115,140.1827],'下妻市':[36.1826,139.9655],'常総市':[36.0240,139.9997],'筑西市':[36.3040,139.9834],'つくば市':[36.0832,140.0763],'ひたちなか市':[36.3964,140.5350] }},
+  '栃木県':     { rep:[36.5657,139.8836], cities:{ '宇都宮市':[36.5657,139.8836],'足利市':[36.3399,139.4504],'栃木市':[36.3869,139.7306],'佐野市':[36.2274,139.5780],'鹿沼市':[36.5609,139.7358],'日光市':[36.7482,139.6191],'小山市':[36.3150,139.8064],'真岡市':[36.4395,140.0150],'大田原市':[36.8734,140.0135],'矢板市':[36.7949,139.9209],'那須塩原市':[36.9253,140.0486] }},
+  '群馬県':     { rep:[36.3906,139.0604], cities:{ '前橋市':[36.3906,139.0604],'高崎市':[36.3224,139.0030],'桐生市':[36.4055,139.3342],'伊勢崎市':[36.3120,139.1974],'太田市':[36.2921,139.3752],'沼田市':[36.6469,139.0447],'館林市':[36.2449,139.5414],'渋川市':[36.4887,139.0015],'藤岡市':[36.2540,139.0739],'富岡市':[36.2556,138.8877] }},
+  '埼玉県':     { rep:[35.8572,139.6489], cities:{ 'さいたま市':[35.8572,139.6489],'川越市':[35.9255,139.4854],'熊谷市':[36.1473,139.3886],'川口市':[35.8077,139.7239],'行田市':[36.1378,139.4552],'秩父市':[35.9913,139.0793],'所沢市':[35.7997,139.4688],'飯能市':[35.8567,139.3353],'加須市':[36.1325,139.5996],'本庄市':[36.2408,139.1899],'春日部市':[35.9749,139.7526],'狭山市':[35.8527,139.4123],'越谷市':[35.8929,139.7912] }},
+  '千葉県':     { rep:[35.6074,140.1065], cities:{ '千葉市':[35.6074,140.1065],'銚子市':[35.7355,140.8280],'市川市':[35.7217,139.9302],'船橋市':[35.6947,139.9836],'館山市':[34.9969,139.8685],'木更津市':[35.3785,139.9256],'松戸市':[35.7876,139.9031],'野田市':[35.9542,139.8740],'茂原市':[35.4264,140.3002],'成田市':[35.7772,140.3183],'佐倉市':[35.7178,140.2239],'市原市':[35.5033,140.1155],'流山市':[35.8545,139.9037],'八千代市':[35.7228,140.1009],'我孫子市':[35.8671,140.0275],'柏市':[35.8677,139.9698] }},
+  '東京都':     { rep:[35.6762,139.6503], cities:{ '千代田区':[35.6942,139.7536],'中央区':[35.6705,139.7726],'港区':[35.6581,139.7514],'新宿区':[35.6938,139.7036],'文京区':[35.7080,139.7521],'台東区':[35.7130,139.7799],'墨田区':[35.7102,139.8013],'江東区':[35.6787,139.8170],'品川区':[35.6097,139.7303],'目黒区':[35.6330,139.6982],'大田区':[35.5617,139.7167],'世田谷区':[35.6465,139.6527],'渋谷区':[35.6639,139.7003],'中野区':[35.7073,139.6643],'杉並区':[35.6994,139.6363],'豊島区':[35.7293,139.7160],'北区':[35.7528,139.7337],'荒川区':[35.7360,139.7837],'板橋区':[35.7535,139.7091],'練馬区':[35.7358,139.6523],'足立区':[35.7750,139.8042],'葛飾区':[35.7341,139.8465],'江戸川区':[35.7010,139.8684],'八王子市':[35.6663,139.3161],'立川市':[35.6927,139.4135],'武蔵野市':[35.7073,139.5707],'三鷹市':[35.6838,139.5597],'府中市':[35.6692,139.4773],'調布市':[35.6513,139.5454],'町田市':[35.5439,139.4468],'多摩市':[35.6368,139.4463] }},
+  '神奈川県':   { rep:[35.4478,139.6425], cities:{ '横浜市':[35.4478,139.6425],'川崎市':[35.5309,139.7027],'相模原市':[35.5703,139.3730],'横須賀市':[35.2818,139.6719],'平塚市':[35.3293,139.3196],'鎌倉市':[35.3197,139.5498],'藤沢市':[35.3385,139.4878],'小田原市':[35.2647,139.1526],'茅ヶ崎市':[35.3330,139.4027],'厚木市':[35.4424,139.3596],'大和市':[35.4670,139.4609],'伊勢原市':[35.4011,139.3131],'海老名市':[35.4464,139.3887],'秦野市':[35.3740,139.2203] }},
+  '新潟県':     { rep:[37.9026,139.0232], cities:{ '新潟市':[37.9026,139.0232],'長岡市':[37.4476,138.8510],'三条市':[37.6357,138.9624],'柏崎市':[37.3712,138.5593],'新発田市':[37.9525,139.3286],'小千谷市':[37.2949,138.7965],'十日町市':[37.1289,138.7578],'上越市':[37.1478,138.2361],'阿賀野市':[37.8336,139.2265],'佐渡市':[38.0178,138.3685] }},
+  '富山県':     { rep:[36.6953,137.2113], cities:{ '富山市':[36.6953,137.2113],'高岡市':[36.7548,137.0257],'魚津市':[36.8197,137.4131],'氷見市':[36.8572,136.9872],'滑川市':[36.7641,137.3373],'黒部市':[36.8706,137.4519],'砺波市':[36.6482,136.9629],'小矢部市':[36.6959,136.8585],'南砺市':[36.5454,136.8846],'射水市':[36.7212,137.1199] }},
+  '石川県':     { rep:[36.5947,136.6256], cities:{ '金沢市':[36.5947,136.6256],'七尾市':[37.0526,136.9666],'小松市':[36.4056,136.4407],'輪島市':[37.3905,136.8988],'珠洲市':[37.4364,137.2584],'加賀市':[36.3038,136.3132],'羽咋市':[36.8932,136.7834],'白山市':[36.5146,136.5640],'能美市':[36.4337,136.4878],'野々市市':[36.5296,136.6090] }},
+  '福井県':     { rep:[36.0652,136.2216], cities:{ '福井市':[36.0652,136.2216],'敦賀市':[35.6447,136.0723],'小浜市':[35.4967,135.7461],'大野市':[35.9787,136.4881],'勝山市':[36.0601,136.5017],'鯖江市':[35.9562,136.1839],'あわら市':[36.2149,136.2314],'越前市':[35.9012,136.1683],'坂井市':[36.1785,136.2302] }},
+  '山梨県':     { rep:[35.6639,138.5685], cities:{ '甲府市':[35.6639,138.5685],'富士吉田市':[35.4896,138.8079],'都留市':[35.5334,138.9019],'山梨市':[35.6879,138.6887],'大月市':[35.6095,138.9428],'韮崎市':[35.7190,138.4521],'南アルプス市':[35.6079,138.4634],'北杜市':[35.7798,138.3999],'甲斐市':[35.6929,138.5157],'笛吹市':[35.6422,138.6411],'甲州市':[35.6954,138.7371],'中央市':[35.5943,138.5165] }},
+  '長野県':     { rep:[36.6513,138.1810], cities:{ '長野市':[36.6513,138.1810],'松本市':[36.2381,137.9719],'上田市':[36.4019,138.2496],'岡谷市':[36.0650,138.0500],'飯田市':[35.5150,137.8222],'諏訪市':[36.0394,138.1127],'須坂市':[36.6513,138.3064],'小諸市':[36.3306,138.4296],'伊那市':[35.8275,137.9536],'駒ヶ根市':[35.7324,137.9265],'中野市':[36.7428,138.3703],'飯山市':[36.8517,138.3679],'塩尻市':[36.1150,137.9551],'佐久市':[36.2502,138.4770] }},
+  '静岡県':     { rep:[34.9769,138.3831], cities:{ '静岡市':[34.9769,138.3831],'浜松市':[34.7108,137.7261],'沼津市':[35.0954,138.8629],'熱海市':[35.0973,139.0730],'三島市':[35.1175,138.9184],'富士宮市':[35.2266,138.6235],'伊東市':[34.9656,139.0999],'島田市':[34.8342,138.1745],'富士市':[35.1618,138.6763],'磐田市':[34.7179,137.8529],'焼津市':[34.8682,138.3240],'掛川市':[34.7686,138.0137],'藤枝市':[34.8692,138.2571],'御殿場市':[35.3094,138.9353] }},
+  '愛知県':     { rep:[35.1815,136.9066], cities:{ '名古屋市':[35.1815,136.9066],'豊橋市':[34.7697,137.3922],'岡崎市':[34.9482,137.1744],'一宮市':[35.3038,136.8009],'瀬戸市':[35.2282,137.0837],'半田市':[34.8982,136.9387],'春日井市':[35.2481,136.9727],'豊川市':[34.8299,137.3760],'津島市':[35.1750,136.7377],'碧南市':[34.8839,136.9896],'刈谷市':[34.9935,137.0021],'豊田市':[35.0829,137.1565],'安城市':[34.9591,137.0802],'西尾市':[34.8613,137.0613],'蒲郡市':[34.8269,137.2228],'犬山市':[35.3833,136.9440],'常滑市':[34.8861,136.8268],'小牧市':[35.2969,136.9119],'稲沢市':[35.2517,136.7868],'新城市':[34.9039,137.5028],'東海市':[35.0209,136.9213],'大府市':[35.0071,136.9681],'知多市':[34.9926,136.8699],'知立市':[34.9870,137.0498],'尾張旭市':[35.2206,137.0476],'高浜市':[34.9259,136.9856],'岩倉市':[35.2799,136.8685],'豊明市':[35.0578,137.0174],'日進市':[35.1330,137.0643] }},
+  '三重県':     { rep:[34.7303,136.5086], cities:{ '津市':[34.7303,136.5086],'四日市市':[34.9641,136.6248],'伊勢市':[34.4904,136.7059],'松阪市':[34.5788,136.5290],'桑名市':[35.0604,136.6903],'鈴鹿市':[34.8824,136.5834],'名張市':[34.6277,136.1083],'尾鷲市':[34.0720,136.1904],'亀山市':[34.8572,136.4535],'鳥羽市':[34.4827,136.8424],'熊野市':[33.8906,136.1049],'志摩市':[34.3272,136.8249],'伊賀市':[34.7680,136.1308] }},
+  '滋賀県':     { rep:[35.0044,135.8688], cities:{ '大津市':[35.0044,135.8688],'彦根市':[35.2742,136.2622],'長浜市':[35.3809,136.2689],'近江八幡市':[35.1278,136.0979],'草津市':[35.0150,135.9608],'守山市':[35.0618,135.9898],'栗東市':[34.9875,135.9956],'甲賀市':[34.9645,136.1732],'野洲市':[35.0648,136.0292],'湖南市':[34.9614,136.1135],'高島市':[35.3476,135.9997],'東近江市':[35.1164,136.2029],'米原市':[35.3198,136.3802] }},
+  '京都府':     { rep:[35.0116,135.7681], cities:{ '京都市':[35.0116,135.7681],'福知山市':[35.2967,135.1272],'舞鶴市':[35.4724,135.3755],'綾部市':[35.2991,135.2553],'宇治市':[34.8847,135.8020],'宮津市':[35.5340,135.1977],'亀岡市':[35.0113,135.5738],'城陽市':[34.8625,135.7802],'向日市':[34.9545,135.6999],'長岡京市':[34.9242,135.6936],'八幡市':[34.8745,135.7063],'京田辺市':[34.8125,135.7714],'京丹後市':[35.6253,135.0598],'南丹市':[35.1126,135.4653],'木津川市':[34.7781,135.8232] }},
+  '大阪府':     { rep:[34.6937,135.5023], cities:{ '大阪市':[34.6937,135.5023],'堺市':[34.5733,135.4829],'岸和田市':[34.4638,135.3762],'豊中市':[34.7830,135.4696],'池田市':[34.8263,135.4371],'吹田市':[34.7656,135.5175],'泉大津市':[34.5021,135.4085],'高槻市':[34.8464,135.6172],'貝塚市':[34.4381,135.3569],'守口市':[34.7322,135.5606],'枚方市':[34.8142,135.6526],'茨木市':[34.8164,135.5683],'八尾市':[34.6282,135.5999],'泉佐野市':[34.4087,135.3303],'富田林市':[34.4992,135.5975],'寝屋川市':[34.7667,135.6283],'河内長野市':[34.4579,135.5642],'松原市':[34.5778,135.5503],'大東市':[34.7157,135.6267],'和泉市':[34.4859,135.4346],'箕面市':[34.8275,135.4701],'柏原市':[34.5764,135.6459],'羽曳野市':[34.5564,135.5964],'門真市':[34.7348,135.5892],'摂津市':[34.7764,135.5598],'高石市':[34.5168,135.4430],'藤井寺市':[34.5744,135.5972],'東大阪市':[34.6800,135.6010],'泉南市':[34.3670,135.2802],'四條畷市':[34.7355,135.6426],'交野市':[34.7774,135.6832] }},
+  '兵庫県':     { rep:[34.6913,135.1830], cities:{ '神戸市':[34.6913,135.1830],'姫路市':[34.8394,134.6939],'尼崎市':[34.7344,135.4074],'明石市':[34.6451,134.9968],'西宮市':[34.7368,135.3422],'洲本市':[34.3406,134.8935],'芦屋市':[34.7290,135.3002],'伊丹市':[34.7850,135.4017],'相生市':[34.8046,134.4652],'豊岡市':[35.5454,134.8198],'加古川市':[34.7570,134.8397],'赤穂市':[34.7529,134.3940],'西脇市':[34.9900,134.9910],'宝塚市':[34.7988,135.3620],'三木市':[34.7897,134.9957],'高砂市':[34.7765,134.7978],'川西市':[34.8259,135.4162],'小野市':[34.8497,134.9299],'三田市':[34.8892,135.2283],'加西市':[34.9478,134.8397],'篠山市':[35.0777,135.2256] }},
+  '奈良県':     { rep:[34.6851,135.8049], cities:{ '奈良市':[34.6851,135.8049],'大和高田市':[34.5133,135.7322],'大和郡山市':[34.6480,135.7888],'天理市':[34.5964,135.8372],'橿原市':[34.5050,135.7918],'桜井市':[34.5143,135.8454],'五條市':[34.3508,135.6849],'御所市':[34.4572,135.7329],'生駒市':[34.6952,135.6939],'香芝市':[34.5341,135.7053],'葛城市':[34.4899,135.7063],'宇陀市':[34.5339,135.9571] }},
+  '和歌山県':   { rep:[34.2261,135.1675], cities:{ '和歌山市':[34.2261,135.1675],'海南市':[34.1521,135.2144],'橋本市':[34.3120,135.6082],'有田市':[34.0823,135.1561],'御坊市':[33.8942,135.1551],'田辺市':[33.7325,135.3762],'新宮市':[33.7264,135.9883],'紀の川市':[34.2695,135.3624] }},
+  '鳥取県':     { rep:[35.5011,134.2351], cities:{ '鳥取市':[35.5011,134.2351],'米子市':[35.4283,133.3310],'倉吉市':[35.4302,133.8254],'境港市':[35.5444,133.2296] }},
+  '島根県':     { rep:[35.4722,133.0505], cities:{ '松江市':[35.4722,133.0505],'浜田市':[34.8986,132.0769],'出雲市':[35.3671,132.7550],'益田市':[34.6747,131.8464],'大田市':[35.1921,132.4993],'安来市':[35.4283,133.2633],'江津市':[34.9867,132.2255],'雲南市':[35.3062,132.9042] }},
+  '岡山県':     { rep:[34.6618,133.9350], cities:{ '岡山市':[34.6618,133.9350],'倉敷市':[34.5850,133.7716],'津山市':[35.0646,134.0048],'玉野市':[34.4913,133.9462],'笠岡市':[34.5024,133.5127],'井原市':[34.5952,133.4664],'総社市':[34.6806,133.7437],'高梁市':[34.7912,133.6212],'新見市':[34.9873,133.4675],'備前市':[34.7249,134.1791],'瀬戸内市':[34.6617,134.0886],'赤磐市':[34.7575,134.0259],'真庭市':[35.0810,133.6978],'美作市':[34.9905,134.2349] }},
+  '広島県':     { rep:[34.3963,132.4596], cities:{ '広島市':[34.3963,132.4596],'呉市':[34.2492,132.5656],'竹原市':[34.3440,132.9036],'三原市':[34.3979,132.9997],'尾道市':[34.4090,133.2009],'福山市':[34.4853,133.3625],'府中市':[34.5677,133.2382],'三次市':[34.7999,132.8549],'庄原市':[34.8600,133.0218],'大竹市':[34.2004,132.2246],'東広島市':[34.4194,132.7433],'廿日市市':[34.3493,132.3268],'安芸高田市':[34.6673,132.7248] }},
+  '山口県':     { rep:[34.1861,131.4706], cities:{ '下関市':[33.9524,130.9385],'宇部市':[33.9519,131.2470],'山口市':[34.1861,131.4706],'萩市':[34.4080,131.3988],'防府市':[34.0518,131.5634],'下松市':[34.0160,131.8703],'岩国市':[34.1662,132.2162],'光市':[33.9697,131.9397],'長門市':[34.3733,131.1817],'柳井市':[33.9626,132.1007],'美祢市':[34.1663,131.2063],'周南市':[34.0549,131.8650],'山陽小野田市':[34.0009,131.1851] }},
+  '徳島県':     { rep:[34.0658,134.5594], cities:{ '徳島市':[34.0658,134.5594],'鳴門市':[34.1760,134.6073],'小松島市':[34.0023,134.5885],'阿南市':[33.9214,134.6637],'吉野川市':[34.0699,134.3552],'阿波市':[34.1303,134.2583],'美馬市':[34.0667,134.1683],'三好市':[33.9612,133.8063] }},
+  '香川県':     { rep:[34.3400,134.0434], cities:{ '高松市':[34.3400,134.0434],'丸亀市':[34.2886,133.7960],'坂出市':[34.3167,133.8618],'善通寺市':[34.2293,133.7832],'観音寺市':[34.1247,133.6617],'さぬき市':[34.3243,134.1870],'東かがわ市':[34.2476,134.4043],'三豊市':[34.1829,133.7162] }},
+  '愛媛県':     { rep:[33.8416,132.7657], cities:{ '松山市':[33.8416,132.7657],'今治市':[34.0659,132.9979],'宇和島市':[33.2225,132.5619],'八幡浜市':[33.4647,132.4176],'新居浜市':[33.9600,133.2831],'西条市':[33.9196,133.1849],'大洲市':[33.5049,132.5460],'伊予市':[33.7568,132.7068],'四国中央市':[33.9904,133.5484],'西予市':[33.3632,132.5079],'東温市':[33.7827,132.8658] }},
+  '高知県':     { rep:[33.5597,133.5311], cities:{ '高知市':[33.5597,133.5311],'室戸市':[33.2937,134.1534],'安芸市':[33.5013,133.9050],'南国市':[33.5810,133.6463],'土佐市':[33.4957,133.4254],'須崎市':[33.3997,133.2821],'宿毛市':[32.9340,132.7283],'土佐清水市':[32.7811,132.9574],'四万十市':[32.9959,132.9347],'香南市':[33.5439,133.6986],'香美市':[33.6155,133.7023] }},
+  '福岡県':     { rep:[33.5904,130.4017], cities:{ '福岡市':[33.5904,130.4017],'北九州市':[33.8834,130.8752],'大牟田市':[33.0288,130.4493],'久留米市':[33.3196,130.5083],'直方市':[33.7425,130.7280],'飯塚市':[33.6430,130.6905],'田川市':[33.6461,130.8229],'柳川市':[33.1637,130.4015],'八女市':[33.2107,130.5601],'筑後市':[33.2217,130.5016],'大川市':[33.2135,130.3839],'行橋市':[33.7255,130.9783],'豊前市':[33.6156,131.1282],'中間市':[33.8119,130.7069],'小郡市':[33.3957,130.5582],'筑紫野市':[33.5064,130.5156],'春日市':[33.5340,130.4724],'大野城市':[33.5444,130.4831],'宗像市':[33.7985,130.5432],'太宰府市':[33.5128,130.5218],'古賀市':[33.7255,130.4679],'福津市':[33.7761,130.4924],'うきは市':[33.3472,130.7571] }},
+  '佐賀県':     { rep:[33.2494,130.2988], cities:{ '佐賀市':[33.2494,130.2988],'唐津市':[33.4501,129.9693],'鳥栖市':[33.3785,130.5044],'多久市':[33.2911,130.1130],'伊万里市':[33.2640,129.8810],'武雄市':[33.1917,130.0197],'鹿島市':[33.1067,130.1063],'小城市':[33.2490,130.2087],'嬉野市':[33.1089,130.0891],'神埼市':[33.3061,130.3713] }},
+  '長崎県':     { rep:[32.7503,129.8779], cities:{ '長崎市':[32.7503,129.8779],'佐世保市':[33.1746,129.7155],'島原市':[32.7877,130.3706],'諫早市':[32.8436,130.0536],'大村市':[32.9018,129.9592],'平戸市':[33.3625,129.5546],'松浦市':[33.3411,129.7131],'対馬市':[34.2012,129.2925],'壱岐市':[33.7476,129.6918],'五島市':[32.6970,128.8380],'西海市':[32.9396,129.5953],'雲仙市':[32.6801,130.1854],'南島原市':[32.6570,130.3094] }},
+  '熊本県':     { rep:[32.8031,130.7079], cities:{ '熊本市':[32.8031,130.7079],'八代市':[32.5048,130.6013],'人吉市':[32.2108,130.7565],'荒尾市':[32.9988,130.4285],'水俣市':[32.2164,130.4013],'玉名市':[32.9289,130.5626],'山鹿市':[33.0119,130.6896],'菊池市':[32.9798,130.8218],'宇土市':[32.6876,130.6600],'上天草市':[32.5280,130.4135],'宇城市':[32.6448,130.6883],'阿蘇市':[32.9484,131.1226],'天草市':[32.4597,130.1968],'合志市':[32.8788,130.7828] }},
+  '大分県':     { rep:[33.2382,131.6126], cities:{ '大分市':[33.2382,131.6126],'別府市':[33.2796,131.4993],'中津市':[33.5987,131.1880],'日田市':[33.3205,130.9414],'佐伯市':[32.9594,131.8996],'臼杵市':[33.1255,131.8050],'津久見市':[33.0702,131.8604],'竹田市':[32.9737,131.3962],'豊後高田市':[33.5574,131.4449],'杵築市':[33.4101,131.6136],'宇佐市':[33.5221,131.3500],'豊後大野市':[32.9790,131.5761],'由布市':[33.2131,131.5634],'国東市':[33.5712,131.7283] }},
+  '宮崎県':     { rep:[31.9077,131.4202], cities:{ '宮崎市':[31.9077,131.4202],'都城市':[31.7209,131.0619],'延岡市':[32.5824,131.6635],'日南市':[31.6074,131.3711],'小林市':[31.9981,130.9735],'日向市':[32.4238,131.6247],'串間市':[31.4633,131.2360],'西都市':[32.1056,131.4049],'えびの市':[32.0455,130.8126] }},
+  '鹿児島県':   { rep:[31.5602,130.5581], cities:{ '鹿児島市':[31.5602,130.5581],'鹿屋市':[31.3762,130.8530],'枕崎市':[31.2713,130.2966],'阿久根市':[32.0158,130.1963],'出水市':[32.0877,130.3519],'指宿市':[31.2540,130.6351],'西之表市':[30.7320,130.9898],'垂水市':[31.4911,130.7048],'薩摩川内市':[31.8144,130.3040],'日置市':[31.6106,130.3989],'曽於市':[31.6556,130.9986],'霧島市':[31.7456,130.7629],'いちき串木野市':[31.7235,130.2701],'南さつま市':[31.4118,130.3299],'志布志市':[31.4688,131.0986],'奄美市':[28.3724,129.4948] }},
+  '沖縄県':     { rep:[26.2124,127.6809], cities:{ '那覇市':[26.2124,127.6809],'宜野湾市':[26.2815,127.7791],'石垣市':[24.3370,124.1555],'浦添市':[26.2462,127.7199],'名護市':[26.5923,127.9772],'糸満市':[26.1214,127.6656],'沖縄市':[26.3363,127.8028],'豊見城市':[26.1632,127.6682],'うるま市':[26.3783,127.8607],'宮古島市':[24.8052,125.2810],'南城市':[26.1464,127.7882] }},
+};
+
+/** 都道府県セレクトを初期化 */
+function initPrefSelect() {
+  const sel = document.getElementById('ob_pref');
+  Object.keys(JAPAN_CITIES).forEach(pref => {
+    const opt = document.createElement('option');
+    opt.value = pref;
+    opt.textContent = pref;
+    sel.appendChild(opt);
+  });
+}
+
+/** 都道府県が選ばれたとき → 市区町村リストを更新 */
+function onPrefChange(pref) {
+  const cityField = document.getElementById('ob_city_field');
+  const citySel   = document.getElementById('ob_city');
+
+  // 座標をリセット
+  document.getElementById('ob_lat').value = '';
+  document.getElementById('ob_lon').value = '';
+
+  if (!pref || !JAPAN_CITIES[pref]) {
+    cityField.style.display = 'none';
+    return;
+  }
+
+  // 市区町村セレクトを生成
+  citySel.innerHTML = '<option value="">市区町村を選択</option>';
+  const cities = JAPAN_CITIES[pref].cities;
+  Object.keys(cities).forEach(city => {
+    const opt = document.createElement('option');
+    const [lat, lon] = cities[city];
+    opt.value = `${lat},${lon}`;
+    opt.textContent = city;
+    citySel.appendChild(opt);
+  });
+
+  // 「都道府県庁所在地で代表する」オプション
+  const repOpt = document.createElement('option');
+  const [rLat, rLon] = JAPAN_CITIES[pref].rep;
+  repOpt.value = `${rLat},${rLon}`;
+  repOpt.textContent = `${pref}（代表地点）`;
+  citySel.insertBefore(repOpt, citySel.options[1]);
+
+  cityField.style.display = 'block';
+
+  // 市区町村が1つの場合は自動選択
+  if (Object.keys(cities).length === 1) {
+    citySel.selectedIndex = 1;
+    onCityChange(citySel.value);
+  }
+}
+
+/** 市区町村が選ばれたとき → 座標をhiddenに保存 */
+function onCityChange(val) {
+  if (!val) return;
+  const [lat, lon] = val.split(',');
+  document.getElementById('ob_lat').value = lat;
+  document.getElementById('ob_lon').value = lon;
+  document.getElementById('ob_tz').value  = 9; // 日本はすべてUTC+9
+}
+
+/** オンボーディング画面の表示/非表示 */
+function showOnboarding(isEdit = false) {
+  const screen = document.getElementById('onboardingScreen');
+  screen.style.display = 'flex';
+  document.getElementById('editProfileBtn').style.display = 'none';
+
+  // 都道府県セレクトを毎回初期化（まだなければ）
+  if (document.getElementById('ob_pref').options.length <= 1) {
+    initPrefSelect();
+  }
+
+  // 編集モードの場合、既存データをフォームに戻す
+  if (isEdit) {
+    const cfg = loadBirthConfig();
+    if (cfg) {
+      document.getElementById('ob_year').value   = cfg.year;
+      document.getElementById('ob_month').value  = cfg.month;
+      document.getElementById('ob_day').value    = cfg.day;
+      document.getElementById('ob_hour').value   = cfg.hour;
+      document.getElementById('ob_minute').value = cfg.minute;
+      document.getElementById('ob_name').value   = cfg.name || '';
+      // 保存済みの都道府県・市区町村を復元
+      if (cfg.pref) {
+        document.getElementById('ob_pref').value = cfg.pref;
+        onPrefChange(cfg.pref);
+        // 少し待ってからcityを選択（オプション生成後）
+        setTimeout(() => {
+          const citySel = document.getElementById('ob_city');
+          const target  = `${cfg.lat},${cfg.lon}`;
+          for (let i = 0; i < citySel.options.length; i++) {
+            if (citySel.options[i].value === target) {
+              citySel.selectedIndex = i;
+              break;
+            }
+          }
+          document.getElementById('ob_lat').value = cfg.lat;
+          document.getElementById('ob_lon').value = cfg.lon;
+        }, 50);
+      }
+    }
+  }
+}
+
+function hideOnboarding() {
+  document.getElementById('onboardingScreen').style.display = 'none';
+  document.getElementById('editProfileBtn').style.display   = 'flex';
+}
+
+/** フォーム送信・バリデーション */
+function submitBirthData() {
+  const year   = parseInt(document.getElementById('ob_year').value);
+  const month  = parseInt(document.getElementById('ob_month').value);
+  const day    = parseInt(document.getElementById('ob_day').value);
+  const timeUnknown = document.getElementById('ob_time_unknown').checked;
+  const hour   = timeUnknown ? 12 : parseInt(document.getElementById('ob_hour').value   || 12);
+  const minute = timeUnknown ? 0  : parseInt(document.getElementById('ob_minute').value || 0);
+  const lat    = parseFloat(document.getElementById('ob_lat').value);
+  const lon    = parseFloat(document.getElementById('ob_lon').value);
+  const tz     = parseFloat(document.getElementById('ob_tz').value) || 9;
+  const name   = document.getElementById('ob_name').value.trim() || '星見人';
+  const pref   = document.getElementById('ob_pref').value;
+
+  // バリデーション
+  const errors = [];
+  if (!year  || year < 1900 || year > 2025) errors.push('生年を正しく入力してください（1900〜2025）');
+  if (!month || month < 1   || month > 12)  errors.push('月を選択してください');
+  if (!day   || day < 1     || day > 31)    errors.push('日を正しく入力してください');
+  if (isNaN(lat) || isNaN(lon) || !pref)    errors.push('出生地（都道府県・市区町村）を選択してください');
+
+  if (errors.length > 0) {
+    alert('⚠️ 入力エラー\n\n' + errors.join('\n'));
+    return;
+  }
+
+  const cfg = { year, month, day, hour, minute, lat, lon, tzOffsetHours: tz, name, timeUnknown, pref };
+  saveBirthConfig(cfg);
+
+  hideOnboarding();
+  startApp(cfg);
+}
+
+
+// ============================================================
+// ── 2. astronomy-engine ラッパー（完全版）
+//
+// 【正しい使い方まとめ】
+//   ① new Date() → Astronomy.MakeTime(date) で AstroTime に変換
+//   ② 惑星黄経 = GeoVector() → Ecliptic() の2段階
+//   ③ Equator() は赤道座標（赤経・赤緯）→ 占星術には使わない
+//   ④ SunPosition() だけは直接黄経を返す特別メソッド
+// ============================================================
+
+/** Date → AstroTime（astronomy-engineの時刻型）に変換 */
+function toAstroTime(date) {
+  return Astronomy.MakeTime(date);
+}
+
+/**
+ * 太陽黄経を返す（0〜360°）
+ * SunPosition() は直接 elon（黄経）を持つので GeoVector 不要
+ */
+function getSunLon(astroTime) {
+  const ecl = Astronomy.SunPosition(astroTime);
+  return ((ecl.elon % 360) + 360) % 360;
+}
+
+/**
+ * 月黄経を返す（0〜360°）
+ * GeoVector → Ecliptic の2段階変換
+ */
+function getMoonLon(astroTime) {
+  const vec = Astronomy.GeoVector(Astronomy.Body.Moon, astroTime, false);
+  const ecl = Astronomy.Ecliptic(vec);
+  return ((ecl.elon % 360) + 360) % 360;
+}
+
+/**
+ * 惑星黄経を返す（0〜360°）
+ * @param {string} bodyName - 'Venus' | 'Jupiter' | 'Mars' | 'Saturn' |
+ *                            'Uranus' | 'Neptune' | 'Pluto' | 'Mercury'
+ *
+ * 【なぜ Equator() ではなく GeoVector → Ecliptic() なのか】
+ *   Equator() → 赤道座標系（赤経・赤緯）= 天文学用
+ *   Ecliptic() → 黄道座標系（黄経・黄緯）= 占星術用 ← こちらを使う
+ */
+function getPlanetLon(bodyName, astroTime) {
+  try {
+    const body = Astronomy.Body[bodyName];
+    const vec  = Astronomy.GeoVector(body, astroTime, false);
+    const ecl  = Astronomy.Ecliptic(vec);
+    return ((ecl.elon % 360) + 360) % 360;
+  } catch(e) {
+    console.warn(`getPlanetLon(${bodyName}) failed:`, e.message);
+    return 0;
+  }
+}
+
+/**
+ * ASC（上昇点）黄経を返す
+ * 計算式: 地方恒星時（LST）から黄道と地平線の交点を求める
+ * @param {AstroTime} astroTime
+ * @param {number} lat - 緯度（度）
+ * @param {number} lon - 経度（度）
+ */
+function getAscLon(astroTime, lat, lon) {
+  // グリニッジ恒星時（時間単位）→ 度に変換 → 経度を加算して地方恒星時（度）
+  const gst  = Astronomy.SiderealTime(astroTime); // 時間単位（0〜24h）
+  const lst  = ((gst * 15 + lon) % 360 + 360) % 360; // 度（0〜360）
+  const latR = lat * Math.PI / 180;
+  const lstR = lst * Math.PI / 180;
+  const eps  = 23.4393 * Math.PI / 180; // 黄道傾斜角（J2000近似）
+
+  // ASC = 黄道と東の地平線の交点（標準的な占星術公式）
+  const asc = Math.atan2(
+    Math.cos(lstR),
+    -(Math.sin(lstR) * Math.cos(eps) + Math.tan(latR) * Math.sin(eps))
+  );
+  return ((asc * 180 / Math.PI) % 360 + 360) % 360;
+}
+
+/**
+ * MC（中天）黄経を返す
+ * 計算式: 子午線と黄道の交点
+ */
+function getMcLon(astroTime, lon) {
+  const gst  = Astronomy.SiderealTime(astroTime);
+  const lst  = ((gst * 15 + lon) % 360 + 360) % 360;
+  const eps  = 23.4393 * Math.PI / 180;
+  const lstR = lst * Math.PI / 180;
+  const mc   = Math.atan2(Math.sin(lstR), Math.cos(lstR) * Math.cos(eps));
+  return ((mc * 180 / Math.PI) % 360 + 360) % 360;
+}
+
+/** POF（パートオブフォーチュン）= ASC + 月 - 太陽 */
+function calcPOF(ascLon, moonLon, sunLon) {
+  return ((ascLon + moonLon - sunLon) % 360 + 360) % 360;
+}
+
+/** 黄経（度）→ 星座名＋度数の文字列 */
+function lonToSignStr(lon) {
+  const signs = ['牡羊座','牡牛座','双子座','蟹座','獅子座','乙女座',
+                 'てんびん座','蠍座','射手座','山羊座','水瓶座','魚座'];
+  const norm = ((lon % 360) + 360) % 360;
+  return `${signs[Math.floor(norm / 30) % 12]} ${(norm % 30).toFixed(1)}°`;
+}
+
+/** ハウスカスプ12個（Equal House方式・ASC基準） */
+function calcEqualHouseCusps(ascLon) {
+  return Array.from({length: 12}, (_, i) => ((ascLon + i * 30) % 360 + 360) % 360);
+}
+
+/**
+ * 【デバッグ用】全天体の現在位置をコンソールに出力
+ * console.group はスマホ非対応のため console.log で代替
+ */
+function debugPlanetPositions(label, positions) {
+  if (typeof console === 'undefined') return;
+  const log = (typeof console.log === 'function') ? console.log.bind(console) : function(){};
+  log('🔭 ' + label);
+  const names = {
+    sun:'太陽☉', moon:'月☽', mercury:'水星☿', venus:'金星♀', jupiter:'木星♃',
+    mars:'火星♂', saturn:'土星♄', uranus:'天王星⛢',
+    neptune:'海王星♆', pluto:'冥王星♇', asc:'ASC', mc:'MC', pof:'POF'
+  };
+  Object.entries(names).forEach(([key, name]) => {
+    if (positions[key] != null) {
+      log('  ' + name + ': ' + lonToSignStr(positions[key]) + ' (' + positions[key].toFixed(4) + '°)');
+    }
+  });
+}
+
+
+// ============================================================
+// ── 3. ネイタル天体位置を計算
+// ============================================================
+function calcNatalPositions(cfg) {
+  const { year, month, day, hour, minute, tzOffsetHours, lat, lon } = cfg;
+
+  // UTC に変換（例: JST 10:30 → UTC 01:30）
+  const birthUTC = new Date(Date.UTC(year, month-1, day, hour - tzOffsetHours, minute));
+  const at = toAstroTime(birthUTC);
+
+  const sunLon  = getSunLon(at);
+  const moonLon = getMoonLon(at);
+  const ascLon  = getAscLon(at, lat, lon);
+  const mcLon   = getMcLon(at, lon);
+  const pofLon  = calcPOF(ascLon, moonLon, sunLon);
+  const cusps   = calcEqualHouseCusps(ascLon);
+
+  const house2SignIdx = Math.floor(cusps[1] / 30) % 12;
+  const house5SignIdx = Math.floor(cusps[4] / 30) % 12;
+  const house8SignIdx = Math.floor(cusps[7] / 30) % 12;
+
+  const result = {
+    sun:     sunLon,
+    moon:    moonLon,
+    mercury: getPlanetLon('Mercury', at),
+    venus:   getPlanetLon('Venus',   at),
+    jupiter: getPlanetLon('Jupiter', at),
+    mars:    getPlanetLon('Mars',    at),
+    saturn:  getPlanetLon('Saturn',  at),
+    uranus:  getPlanetLon('Uranus',  at),
+    neptune: getPlanetLon('Neptune', at),
+    pluto:   getPlanetLon('Pluto',   at),
+    mc:      mcLon,
+    asc:     ascLon,
+    pof:     pofLon,
+    houseCusps: cusps,
+    // ── ハウスルーラーを RULER_MAP で自動判定 ──────────────
+    house2RulerPlanet: getRuler(cusps[1]), // 2H カスプの星座からルーラーを取得
+    house5RulerPlanet: getRuler(cusps[4]), // 5H カスプ（勝負・投機）
+    house8RulerPlanet: getRuler(cusps[7]), // 8H カスプ（臨時収入・他者資本）
+  };
+
+  // スマホ対応：console.log のみ使用
+  const log = (typeof console !== 'undefined' && typeof console.log === 'function')
+    ? console.log.bind(console) : function(){};
+  log('🏠 ハウスルーラー自動判定');
+  log('  2H: ' + getSign(cusps[1]) + ' → ' + result.house2RulerPlanet);
+  log('  5H: ' + getSign(cusps[4]) + ' → ' + result.house5RulerPlanet);
+  log('  8H: ' + getSign(cusps[7]) + ' → ' + result.house8RulerPlanet);
+
+  // F12 開発者ツールで確認できます
+  debugPlanetPositions(`ネイタル（${year}/${month}/${day} ${hour}:${String(minute).padStart(2,'0')} UTC+${tzOffsetHours}）`, result);
+  return result;
+}
+
+
+// ============================================================
+// ── 4. トランジット天体位置を計算（今日・現在時刻）
+// ============================================================
+function calcTransitPositions(date, lat, lon) {
+  const at = toAstroTime(date);
+
+  const sunLon  = getSunLon(at);
+  const moonLon = getMoonLon(at);
+  const ascLon  = getAscLon(at, lat, lon);
+  const pofLon  = calcPOF(ascLon, moonLon, sunLon);
+
+  const result = {
+    sun:     sunLon,
+    moon:    moonLon,
+    venus:   getPlanetLon('Venus',   at),
+    jupiter: getPlanetLon('Jupiter', at),
+    mars:    getPlanetLon('Mars',    at),
+    saturn:  getPlanetLon('Saturn',  at),
+    uranus:  getPlanetLon('Uranus',  at),
+    neptune: getPlanetLon('Neptune', at),
+    pluto:   getPlanetLon('Pluto',   at),
+    asc:     ascLon,
+    pof:     pofLon,
+  };
+
+  debugPlanetPositions(`トランジット（${date.toLocaleString('ja-JP')}）`, result);
+  return result;
+}
+
+
+// ============================================================
+// ── 5. ユーティリティ関数
+// ============================================================
+
+function getOrb(deg1, deg2) {
+  let diff = Math.abs(deg1 - deg2) % 360;
+  if (diff > 180) diff = 360 - diff;
+  return diff;
+}
+
+// ============================================================
+// ── 黄経 → 星座名
+//    使い方: getSign(transit.jupiter) → '双子座'
+// ============================================================
+function getSign(deg) {
+  const signs = [
+    '牡羊座','牡牛座','双子座','蟹座',
+    '獅子座','乙女座','天秤座','蠍座',
+    '射手座','山羊座','水瓶座','魚座',
+  ];
+  return signs[Math.floor(((deg % 360) + 360) % 360 / 30)];
+}
+
+// ============================================================
+// ── 星座 → ルーラー惑星の対応表（伝統的7天体）
+//    使い方: RULER_MAP[getSign(cusps[1])] → '金星'
+// ============================================================
+const RULER_MAP = {
+  '牡羊座': 'mars',
+  '牡牛座': 'venus',
+  '双子座': 'mercury',
+  '蟹座':   'moon',
+  '獅子座': 'sun',
+  '乙女座': 'mercury',
+  '天秤座': 'venus',
+  '蠍座':   'mars',    // 伝統的ルーラー（近代: pluto）
+  '射手座': 'jupiter',
+  '山羊座': 'saturn',
+  '水瓶座': 'saturn',  // 伝統的ルーラー（近代: uranus）
+  '魚座':   'jupiter', // 伝統的ルーラー（近代: neptune）
+};
+
+/** 黄経からルーラー惑星名を返す */
+function getRuler(deg) {
+  return RULER_MAP[getSign(deg)] || 'sun';
+}
+
+function detectAspect(deg1, deg2, orbLimit = 8) {
+  const orb = getOrb(deg1, deg2);
+  const aspects = [
+    { type: '☌ コンジャンクション', angle: 0,   orb: orbLimit },
+    { type: '⚹ セクスタイル',       angle: 60,  orb: 6 },
+    { type: '△ トライン',           angle: 120, orb: orbLimit },
+    { type: '□ スクエア',           angle: 90,  orb: orbLimit },
+    { type: '☍ オポジション',       angle: 180, orb: orbLimit },
+  ];
+  for (const asp of aspects) {
+    if (Math.abs(orb - asp.angle) <= asp.orb) {
+      return { type: asp.type, orb: Math.abs(orb - asp.angle) };
+    }
+  }
+  return null;
+}
+
+function isInHouse(planetDeg, houseIndex, cusps) {
+  const start = cusps[houseIndex];
+  const end   = cusps[(houseIndex + 1) % 12];
+  if (start < end) return planetDeg >= start && planetDeg < end;
+  return planetDeg >= start || planetDeg < end;
+}
+
+function checkGuillenLaw(transit, natal) {
+  const results = [];
+  const moonToMC = getOrb(transit.moon,    natal.mc);
+  const jupToMC  = getOrb(transit.jupiter, natal.mc);
+  if (moonToMC <= 30) results.push(`☽月がネイタルMCに${moonToMC.toFixed(1)}°`);
+  if (jupToMC  <= 30) results.push(`♃木星がネイタルMCに${jupToMC.toFixed(1)}°`);
+  const moonToPOF = detectAspect(transit.moon, natal.pof, 3);
+  if (moonToPOF) results.push(`☽月がネイタルPOFに${moonToPOF.type}`);
+  if (transit.asc !== null) {
+    const ascToPOF = detectAspect(transit.asc, natal.pof, 3);
+    if (ascToPOF) results.push(`ASCがネイタルPOFに${ascToPOF.type}`);
+  }
+  if (transit.pof !== null) {
+    ['jupiter','sun','venus'].forEach(p => {
+      const asp = detectAspect(transit.pof, natal[p], 3);
+      if (asp) results.push(`トランジットPOFがネイタル${p}に${asp.type}`);
+    });
+  }
+  return { triggered: results.length > 0, detail: results };
+}
+
+
+// ============================================================
+// ── 6. 金運スコア計算
+// ============================================================
+function calcMoneyScore(transit, natal) {
+  let score = 0;
+  const reasons = [], warnings = [];
+  const h2RDeg = natal[natal.house2RulerPlanet];
+
+  const jupTo2H = detectAspect(transit.jupiter, h2RDeg, 8);
+  const venTo2H = detectAspect(transit.venus,   h2RDeg, 8);
+  if (jupTo2H) { score += 25; reasons.push(`♃木星が2Hルーラーに${jupTo2H.type}`); }
+  if (venTo2H) { score += 20; reasons.push(`♀金星が2Hルーラーに${venTo2H.type}`); }
+
+  const h8RDeg  = natal[natal.house8RulerPlanet];
+  const jupTo8H = detectAspect(transit.jupiter, h8RDeg, 8);
+  if (jupTo8H) { score += 15; reasons.push(`♃木星が8Hルーラーに${jupTo8H.type}（臨時収入）`); }
+
+  if (isInHouse(transit.jupiter, 1, natal.houseCusps)) { score += 20; reasons.push(`♃木星が2ハウス滞在中`); }
+  if (isInHouse(transit.jupiter, 7, natal.houseCusps)) { score += 15; reasons.push(`♃木星が8ハウス滞在中`); }
+  if (isInHouse(transit.moon,    1, natal.houseCusps)) { score += 10; reasons.push(`☽月が2ハウス通過中`); }
+  if (isInHouse(transit.moon,    7, natal.houseCusps)) { score += 8;  reasons.push(`☽月が8ハウス通過中`); }
+
+  const venToPOF = detectAspect(transit.venus, natal.pof, 5);
+  if (venToPOF) { score += 10; reasons.push(`♀金星がPOFに${venToPOF.type}`); }
+
+  const guillen = checkGuillenLaw(transit, natal);
+  if (guillen.triggered) { score += 15; reasons.push(...guillen.detail); }
+
+  const satTo2H = detectAspect(transit.saturn, h2RDeg, 8);
+  if (satTo2H) { score -= 10; reasons.push(`♄土星が2Hルーラーに${satTo2H.type}（計画投資・財布整理の日）`); }
+
+  const nepTo2H = detectAspect(transit.neptune, h2RDeg, 5);
+  if (nepTo2H) { score -= 5; warnings.push('⚠️ 海王星が絡む日：予算を決めて楽しんで'); }
+
+  return { score: Math.max(0, Math.min(100, score)), stars: scoreToStars(score), reasons, warnings };
+}
+
+
+// ============================================================
+// ── 7. 勝負運スコア計算
+// ============================================================
+function calcBattleScore(transit, natal) {
+  let score = 0;
+  const reasons = [], warnings = [];
+  const h5RDeg = natal[natal.house5RulerPlanet]; // 5Hルーラー（勝負・投機・遊び）
+  const h8RDeg = natal[natal.house8RulerPlanet]; // 8Hルーラー（臨時収入・他者資本）
+
+  const jupTo5H  = detectAspect(transit.jupiter, h5RDeg, 8);
+  const jupTo8HR = detectAspect(transit.jupiter, h8RDeg, 8);
+  if (jupTo5H)  { score += 20; reasons.push(`♃木星が5Hルーラーに${jupTo5H.type}`); }
+  if (jupTo8HR) { score += 15; reasons.push(`♃木星が8Hルーラーに${jupTo8HR.type}`); }
+
+  const urAsp = detectAspect(transit.uranus, natal.mars, 5);
+  if (urAsp) {
+    score += 15;
+    warnings.push('⚡ 天王星が絡む日：突発的な利益・損失の両方に注意');
+    reasons.push(`⛢天王星が火星に${urAsp.type}（予測不能の展開）`);
+  }
+
+  const marToJup = detectAspect(transit.mars, natal.jupiter, 6);
+  if (marToJup) { score += 12; reasons.push(`♂火星が木星に${marToJup.type}（勝負勘↑）`); }
+
+  const pluTo5H = detectAspect(transit.pluto, h5RDeg, 4);
+  if (pluTo5H)  { score += 10; reasons.push(`♇冥王星が5Hルーラーに${pluTo5H.type}（一発逆転）`); }
+
+  const guillen = checkGuillenLaw(transit, natal);
+  if (guillen.triggered) { score += 10; }
+
+  const satTo5H = detectAspect(transit.saturn, h5RDeg, 8);
+  if (satTo5H) { score -= 15; reasons.push(`♄土星が5Hルーラーに${satTo5H.type}（ギャンブルより計画投資◎）`); }
+
+  const nep5H = detectAspect(transit.neptune, h5RDeg, 5);
+  if (nep5H) { score -= 8; warnings.push('⚠️ 海王星が絡む日：予算を決めて楽しんで'); }
+
+  return { score: Math.max(0, Math.min(100, score)), stars: scoreToStars(score), reasons, warnings };
+}
+
+
+// ============================================================
+// ── 8. スコア → 星変換
+// ============================================================
+function scoreToStars(score) {
+  if (score >= 80) return { stars: 5, display: '⭐⭐⭐⭐⭐', label: '超絶ラッキー！' };
+  if (score >= 60) return { stars: 4, display: '⭐⭐⭐⭐☆', label: '強い追い風' };
+  if (score >= 40) return { stars: 3, display: '⭐⭐⭐☆☆', label: '普通〜やや良い' };
+  if (score >= 20) return { stars: 2, display: '⭐⭐☆☆☆', label: '静かな一日' };
+  return                  { stars: 1, display: '⭐☆☆☆☆', label: '充電日' };
+}
+
+
+// ============================================================
+// ── 9. カード選択
+// ============================================================
+const cardDatabase = [
+  { minScore: 80, symbol: '🌟', name: '大吉の星',   title: '黄金の扉、全開',    subtitle: '木星とPOFが共鳴する\n最高潮の金運日' },
+  { minScore: 60, symbol: '💰', name: '豊穣の星',   title: '金運の扉が\n開く予感',  subtitle: '木星があなたの\n2ハウスに優しく宿る日' },
+  { minScore: 40, symbol: '🌿', name: '安定の葉',   title: 'コツコツが\n実を結ぶ日', subtitle: '土星の恵みで\n堅実な金運が宿る' },
+  { minScore: 20, symbol: '🌙', name: '静月の夜',   title: '今日は温存日',         subtitle: '次の大波に向けて\nエネルギーを蓄えて' },
+  { minScore:  0, symbol: '💎', name: '内省の宝石', title: '深呼吸の一日',         subtitle: '財布を見直し\n未来への種を蒔く日' },
+];
+function selectCard(score) {
+  return cardDatabase.find(c => score >= c.minScore) || cardDatabase[cardDatabase.length - 1];
+}
+
+
+// ============================================================
+// ── 10. 天体ピル更新
+// ============================================================
+const PLANET_SYMBOLS = {
+  sun:'☉', moon:'☽', venus:'♀', jupiter:'♃',
+  mars:'♂', saturn:'♄', uranus:'⛢', neptune:'♆', pluto:'♇',
+};
+const PLANET_NAMES = {
+  sun:'太陽', moon:'月', venus:'金星', jupiter:'木星',
+  mars:'火星', saturn:'土星', uranus:'天王星', neptune:'海王星', pluto:'冥王星',
+};
+
+function updatePlanetPills(transit, natal) {
+  const pills = [];
+  const planets = ['jupiter','venus','moon','saturn','mars','uranus','neptune','pluto'];
+  const keyNatal = ['pof','mc','asc','jupiter','venus','sun','mars'];
+
+  planets.forEach(tp => {
+    keyNatal.forEach(np => {
+      const asp = detectAspect(transit[tp], natal[np] ?? 0, 8);
+      if (asp) {
+        const isGood = ['jupiter','venus','moon'].includes(tp) &&
+                       !['saturn','neptune'].includes(tp);
+        pills.push({ label:`${PLANET_SYMBOLS[tp]}${PLANET_NAMES[tp]} ${asp.type.split(' ')[0]} ${np.toUpperCase()}`, active: isGood });
+      }
+    });
+  });
+
+  // ハウス入室
+  if (isInHouse(transit.jupiter, 1, natal.houseCusps)) pills.push({ label:'♃木星 2H滞在', active:true });
+  if (isInHouse(transit.moon,    1, natal.houseCusps)) pills.push({ label:'☽月 2H通過',   active:true });
+
+  const el = document.getElementById('planetPills');
+  if (pills.length === 0) {
+    el.innerHTML = '<div class="planet-pill">今日は静かな天空</div>';
+    return;
+  }
+  el.innerHTML = pills.slice(0, 6).map(p =>
+    `<div class="planet-pill ${p.active?'active':''}">${p.label}</div>`
+  ).join('');
+}
+
+
+// ============================================================
+// ── 11. メインUI更新
+// ============================================================
+function updateUI(natal, transit) {
+  const money  = calcMoneyScore(transit, natal);
+  const battle = calcBattleScore(transit, natal);
+
+  const card = selectCard(money.score);
+  document.getElementById('tarotSymbol').textContent = card.symbol;
+  document.getElementById('tarotName').textContent   = card.name;
+  document.getElementById('cardTitle').innerHTML     = card.title.replace('\n','<br>');
+  document.getElementById('cardSubtitle').innerHTML  = card.subtitle.replace('\n','<br>');
+
+  document.getElementById('moneyBar').style.width   = money.score  + '%';
+  document.getElementById('battleBar').style.width  = battle.score + '%';
+  document.getElementById('moneyStars').textContent  = money.stars.display;
+  document.getElementById('battleStars').textContent = battle.stars.display;
+
+  const allWarnings = [...money.warnings,  ...battle.warnings];
+  const allReasons  = [...money.reasons,   ...battle.reasons];
+  if (allReasons.length > 0) {
+    document.getElementById('descBody').innerHTML =
+      `<strong>${allReasons[0]}</strong><br><br>` +
+      allReasons.slice(1, 3).join('<br>') +
+      (allReasons.length > 3 ? `<br><span style="opacity:.6">他 ${allReasons.length-3} 件のアスペクト</span>` : '');
+  } else {
+    document.getElementById('descBody').innerHTML =
+      '今日は天体が静かに休んでいます。<br>心を整えるのに最適な一日。';
+  }
+
+  const warnEl = document.getElementById('warningBadge');
+  if (allWarnings.length > 0) {
+    warnEl.style.display = 'inline-flex';
+    warnEl.textContent = allWarnings[0];
+  } else {
+    warnEl.style.display = 'none';
+  }
+
+  updatePlanetPills(transit, natal);
+
+  // 月齢バナー
+  const at = toAstroTime(new Date());
+  const moonLon    = getMoonLon(at);
+  const sunLon     = getSunLon(at);
+  const phaseAngle = ((moonLon - sunLon) % 360 + 360) % 360;
+  document.getElementById('moonTitle').textContent =
+    `月 ${lonToSignStr(moonLon)}（太陽との角度 ${phaseAngle.toFixed(1)}°）`;
+
+  // アドバイスカード動的更新
+  updateAdviceCards(money, battle, natal, transit);
+
+  // URLに ?debug を付けたときだけ検証パネルを表示
+  if (location.search.includes('debug')) {
+    renderDebugPanel(natal, transit);
+  }
+}
+
+// ============================================================
+// 💡 アドバイスカード動的生成
+// ============================================================
+function updateAdviceCards(money, battle, natal, transit) {
+
+  // TODAY'S ACTION（金運スコア＋アスペクトで変化）
+  const actionData = (() => {
+    if (money.score >= 70) return { icon:'🚀', text:'積極的に動いて！投資・交渉・新規提案に最適な一日' };
+    if (money.score >= 50) return { icon:'💰', text:'財布の新調・貯金のスタート・ネットショッピングに吉' };
+    if (money.score >= 30) return { icon:'📋', text:'家計簿・収支の見直し・サブスクの整理に最適' };
+    const saturnActive = money.reasons.some(r => r.includes('土星'));
+    if (saturnActive)      return { icon:'📊', text:'長期投資の計画・節税対策・損切りの見直しに◎' };
+    return                        { icon:'💳', text:'財布の中身を確認・不要なカードやレシートを整理して' };
+  })();
+
+  // AVOID TODAY（警告内容を反映）
+  const avoidData = (() => {
+    const hasNeptune = money.warnings.some(w => w.includes('海王星'));
+    const hasUranus  = battle.warnings.some(w => w.includes('天王星'));
+    const hasSaturn  = money.reasons.some(r => r.includes('土星'));
+    if (hasNeptune) return { icon:'🌊', text:'予算オーバーに注意。海王星の影響で判断が甘くなりやすい日' };
+    if (hasUranus)  return { icon:'⚡', text:'突発的な出費に注意。大きな賭けは今日は見送って' };
+    if (hasSaturn)  return { icon:'⚖️', text:'ギャンブル・衝動買いは避けて。計画的な行動が◎' };
+    if (money.score < 25) return { icon:'🛑', text:'大きな金銭的決断は吉日に持ち越して。今日は静観が吉' };
+    return                       { icon:'🌿', text:'衝動買い・感情的な大きな出費は翌吉日に持ち越して' };
+  })();
+
+  // LUCKY ITEM（今日の月の星座で変化）
+  const moonSign = getSign(getMoonLon(toAstroTime(new Date())));
+  const luckyItems = {
+    '牡羊座':    { icon:'🔴', text:'赤いアイテム・スポーツ用品・スタートに使うもの' },
+    '牡牛座':    { icon:'💚', text:'緑の財布・本革製品・美味しい食べ物・植物' },
+    '双子座':    { icon:'📱', text:'文房具・書籍・ペアアイテム・通信グッズ' },
+    '蟹座':      { icon:'🏠', text:'真珠・白いアイテム・家で使うもの・家族へのギフト' },
+    '獅子座':    { icon:'👑', text:'ゴールドのアクセサリー・ブランド品・自分へのご褒美' },
+    '乙女座':    { icon:'🌿', text:'ハーブ・手帳・整理整頓グッズ・健康食品' },
+    'てんびん座':{ icon:'🌸', text:'ピンクや水色のアイテム・ペアグッズ・美容グッズ' },
+    '蠍座':      { icon:'🔮', text:'黒・深紅のアイテム・パワーストーン・秘密の貯金箱' },
+    '射手座':    { icon:'🌏', text:'外国製品・旅グッズ・哲学書・矢のモチーフ' },
+    '山羊座':    { icon:'⌚', text:'時計・革製品・ダークカラーのアイテム・高品質な実用品' },
+    '水瓶座':    { icon:'💜', text:'テクノロジーグッズ・ユニークなデザイン・友人へのギフト' },
+    '魚座':      { icon:'🐚', text:'パープル・シルバーのアイテム・アロマ・海のモチーフ' },
+  };
+  const luckyData = luckyItems[moonSign] || { icon:'✨', text:'ゴールドのアクセサリー・開運財布・水晶' };
+
+  // PEAK TIME（活性天体で変化）
+  const peakData = (() => {
+    const jupActive  = money.reasons.some(r => r.includes('木星'));
+    const venActive  = money.reasons.some(r => r.includes('金星'));
+    const moonActive = money.reasons.some(r => r.includes('月'));
+    const h = new Date().getHours();
+    if (jupActive) return { icon:'♃', text: h < 12 ? '午前中〜12時　木星のエネルギーが活発' : '14:00〜16:00　木星時間帯がピーク' };
+    if (venActive) return { icon:'♀', text: h < 14  ? '10:00〜12:00　金星時間帯に行動を' : '15:00〜17:00　金星の恵みを受け取って' };
+    if (moonActive)return { icon:'☽', text: '月の動きが活発な夜〜深夜が◎。直感を大切に' };
+    return                { icon:'🌅', text: '朝一番（7〜9時）に意図設定するのが吉' };
+  })();
+
+  // DOMに反映
+  document.getElementById('adviceActionIcon').textContent = actionData.icon;
+  document.getElementById('adviceAction').textContent     = actionData.text;
+  document.getElementById('adviceAvoidIcon').textContent  = avoidData.icon;
+  document.getElementById('adviceAvoid').textContent      = avoidData.text;
+  document.getElementById('adviceLuckyIcon').textContent  = luckyData.icon;
+  document.getElementById('adviceLucky').textContent      = luckyData.text;
+  document.getElementById('advicePeakIcon').textContent   = peakData.icon;
+  document.getElementById('advicePeak').textContent       = peakData.text;
+}
+
+// ============================================================
+// 🔍 検証パネル（スマホでもリアル計算を目で確認できる）
+//    確認が済んだら「閉じる」ボタンで非表示にできます
+// ============================================================
+function renderDebugPanel(natal, transit) {
+  // すでにパネルがあれば更新、なければ生成
+  let panel = document.getElementById('debugPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'debugPanel';
+    panel.style.cssText = `
+      width: calc(100% - 32px); margin: 0 auto 16px;
+      background: rgba(0,0,0,0.6);
+      border: 1px solid rgba(201,169,110,0.3);
+      border-radius: 18px; padding: 18px 16px;
+      font-family: 'Zen Kaku Gothic New', sans-serif;
+      font-size: 11px; color: rgba(255,255,255,0.7);
+      line-height: 1.9; position: relative;
+    `;
+    // アドバイスカードの前に挿入
+    const adviceCards = document.querySelector('.advice-cards');
+    if (adviceCards) adviceCards.parentNode.insertBefore(panel, adviceCards);
+  }
+
+  const row = (label, val) =>
+    `<div style="display:flex;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.06);padding:3px 0;">
+      <span style="color:rgba(200,180,255,0.7);">${label}</span>
+      <span style="color:#F0D9A8;font-weight:700;">${val}</span>
+    </div>`;
+
+  panel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <span style="font-size:10px;letter-spacing:0.14em;color:rgba(201,169,110,0.8);">
+        🔍 検証パネル（リアル計算確認用）
+      </span>
+      <button onclick="document.getElementById('debugPanel').style.display='none'"
+        style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);
+               border-radius:10px;padding:3px 10px;color:rgba(255,255,255,0.5);
+               font-size:10px;cursor:pointer;">閉じる</button>
+    </div>
+
+    <div style="color:rgba(201,169,110,0.6);font-size:9px;letter-spacing:0.12em;margin-bottom:6px;">
+      ── ネイタル（出生時） ──
+    </div>
+    ${row('☉ 太陽',   lonToSignStr(natal.sun))}
+    ${row('☽ 月',     lonToSignStr(natal.moon))}
+    ${row('♀ 金星',   lonToSignStr(natal.venus))}
+    ${row('♃ 木星',   lonToSignStr(natal.jupiter))}
+    ${row('♂ 火星',   lonToSignStr(natal.mars))}
+    ${row('♄ 土星',   lonToSignStr(natal.saturn))}
+    ${row('ASC',       lonToSignStr(natal.asc))}
+    ${row('MC',        lonToSignStr(natal.mc))}
+    ${row('POF',       lonToSignStr(natal.pof))}
+    ${row('2Hルーラー', natal.house2RulerPlanet)}
+    ${row('5Hルーラー', natal.house5RulerPlanet)}
+    ${row('8Hルーラー', natal.house8RulerPlanet)}
+
+    <div style="color:rgba(201,169,110,0.6);font-size:9px;letter-spacing:0.12em;margin:10px 0 6px;">
+      ── トランジット（今日） ──
+    </div>
+    ${row('☉ 太陽',   lonToSignStr(transit.sun))}
+    ${row('☽ 月',     lonToSignStr(transit.moon))}
+    ${row('♀ 金星',   lonToSignStr(transit.venus))}
+    ${row('♃ 木星',   lonToSignStr(transit.jupiter))}
+    ${row('♂ 火星',   lonToSignStr(transit.mars))}
+    ${row('♄ 土星',   lonToSignStr(transit.saturn))}
+    ${row('⛢ 天王星', lonToSignStr(transit.uranus))}
+    ${row('♆ 海王星', lonToSignStr(transit.neptune))}
+    ${row('♇ 冥王星', lonToSignStr(transit.pluto))}
+  `;
+}
+
+
+/** メインアプリ起動（出生データを受け取って計算・表示） */
+async function startApp(cfg) {
+  // ローディングオーバーレイを表示
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) { overlay.style.opacity = '1'; overlay.style.display = 'flex'; }
+
+  // ヘッダーにニックネームを反映
+  const nameEl = document.getElementById('app-username');
+  if (nameEl) nameEl.textContent = cfg.name ? `${cfg.name} の星盤` : '';
+
+  try {
+    loadProgress(20);
+    if (typeof Astronomy === 'undefined') throw new Error('astronomy-engine の読み込みに失敗しました');
+    loadProgress(40);
+
+    const natal = calcNatalPositions(cfg);
+    window._natalCache = natal; // マイデータ画面で使い回す
+    mydataRendered = false;     // 新データ入力時は必ず再描画させる
+    loadProgress(70);
+
+    const transit = calcTransitPositions(new Date(), cfg.lat, cfg.lon);
+    loadProgress(90);
+
+    updateUI(natal, transit);
+    updateMoonBiorhythm(transit.moon);
+    loadProgress(100);
+
+    await new Promise(r => setTimeout(r, 400));
+    if (overlay) {
+      overlay.style.transition = 'opacity 0.6s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => { overlay.style.display = 'none'; }, 600);
+    }
+
+  } catch(err) {
+    console.error('占星術計算エラー:', err);
+    if (overlay) overlay.innerHTML = `
+      <div style="text-align:center; color:rgba(255,180,180,0.9); padding:32px; font-family:'Zen Kaku Gothic New',sans-serif;">
+        <div style="font-size:36px; margin-bottom:16px;">⚠️</div>
+        <div style="font-size:14px; margin-bottom:8px;">天体計算ライブラリの読み込みに失敗しました</div>
+        <div style="font-size:11px; opacity:0.6; margin-bottom:20px;">インターネット接続を確認してください</div>
+        <div style="font-size:10px; opacity:0.4;">${err.message}</div>
+        <button onclick="location.reload()" style="
+          margin-top:20px; padding:10px 24px;
+          background:rgba(201,169,110,0.2); border:1px solid rgba(201,169,110,0.5);
+          border-radius:20px; color:#F0D9A8; font-size:13px; cursor:pointer;
+        ">再読み込み</button>
+      </div>
+    `;
+  }
+}
+
+// ── エントリーポイント：localStorageにデータがあればそのまま起動、なければ入力画面へ ──
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', entryPoint);
+} else {
+  entryPoint();
+}
+
+function entryPoint() {
+  initPrefSelect(); // 都道府県セレクトを初期化
+  const cfg = loadBirthConfig();
+  if (cfg) {
+    // 既存ユーザー → そのまま起動
+    document.getElementById('editProfileBtn').style.display = 'flex';
+    startApp(cfg);
+  } else {
+    // 新規ユーザー → 入力画面を表示（ローディングは非表示）
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.style.display = 'none';
+    showOnboarding(false);
+  }
+}
+
+
+// ============================================================
+// ── カードタップ：キラキラ ＋ 今日の一言リーディング
+// ============================================================
+
+// 金運スコアとアスペクトに応じたリーディングメッセージ
+const CARD_READINGS = {
+  S: [ // 個人金運最強日
+    '今日はあなたの星が最大限に輝いています。\n引き寄せの扉が全開——欲しいものを声に出して。',
+    '木星とあなたの金星が共鳴中。\nお金のエネルギーが自然と集まってくる一日です。',
+    '今日動いた一歩が、10倍になって返ってくる日。\n直感を信じて行動して。',
+  ],
+  A: [ // 占星術吉日
+    '追い風が吹いています。\n大きくはないけれど、確かな金運の流れを感じて。',
+    '今日の星配置はあなたに味方しています。\n小さなラッキーを見逃さないで。',
+    '新しいご縁やチャンスが舞い込みやすい一日。\nアンテナを張っておいて。',
+  ],
+  B: [ // 月次金運
+    '月があなたの星を優しく照らしています。\n今日は感謝の気持ちを大切に過ごして。',
+    '穏やかな金運の日。\n大きな決断より、日常の小さな豊かさを味わって。',
+    '月の光があなたの直感を高めています。\n今日感じたことをメモしておくと◎',
+  ],
+  low: [ // 普通〜低スコア
+    '今日は静かに充電する日。\n焦らず、次の吉日に向けてエネルギーを蓄えて。',
+    '種まきより土壌を整える日。\n財布の中身を確認して、不要なものを手放して。',
+    '今日の月があなたに語りかけています——\n「休むことも豊かさへの道」と。',
+  ],
+};
+
+// 月相ごとの追加メッセージ
+const MOON_CARD_MSG = {
+  full:       '🌕 満月のエネルギーと共鳴中——受け取り上手になる日。',
+  new:        '🌑 新月の意図設定パワーが宿る日——願いを書いて。',
+  last_q:     '🌗 下弦の月——手放すと次の豊かさが入ってくる。',
+  izayoi:     '🌖 十六夜月——満月の恵みをゆっくり消化する夜。',
+  tachimachi: '🌖 立待月——立って待つほど美しい月があなたを照らす。',
+  imachi:     '🌖 居待月——座って待つ穏やかさが幸運を呼ぶ。',
+  nemachi:    '🌖 寝待月——今夜は早く休んでエネルギーを蓄えて。',
+  fukeachi:   '🌖 更待月——夜更けの静けさの中に答えがある。',
+};
+
+function sparkleEffect(el) {
+  // キラキラエフェクト
+  for (let i = 0; i < 12; i++) {
+    setTimeout(() => {
+      const s = document.createElement('div');
+      s.className = 'sparkle';
+      s.textContent = ['✨','⭐','💫','✦','★','🌟'][Math.floor(Math.random()*6)];
+      s.style.cssText = `
+        left: ${el.offsetLeft + Math.random() * el.offsetWidth}px;
+        top:  ${el.offsetTop  + Math.random() * el.offsetHeight - 20}px;
+        font-size: ${10 + Math.random() * 16}px;
+      `;
+      el.parentElement.appendChild(s);
+      setTimeout(() => s.remove(), 1500);
+    }, i * 60);
+  }
+
+  // 少し遅れてリーディングポップアップを表示
+  setTimeout(() => showCardReading(), 400);
+}
+
+function showCardReading() {
+  // 既存のポップアップがあれば閉じる
+  const existing = document.getElementById('cardReadingPopup');
+  if (existing) { existing.remove(); return; }
+
+  // 今日のスコアとフェーズを取得
+  const cfg = loadBirthConfig();
+  const natal = window._natalCache;
+  const today = new Date();
+  const moonAge = calcMoonAge(today);
+  const phase   = getMoonPhase(moonAge);
+
+  // スコアランクを判定
+  let rank = 'low';
+  if (natal) {
+    const transit = calcTransitPositions(today, cfg?.lat || 35.67, cfg?.lon || 139.65);
+    const money   = calcMoneyScore(transit, natal);
+    if (money.score >= 60)      rank = 'S';
+    else if (money.score >= 40) rank = 'A';
+    else if (money.score >= 20) rank = 'B';
+  }
+
+  // メッセージをランダム選択
+  const msgs  = CARD_READINGS[rank] || CARD_READINGS.low;
+  const main  = msgs[Math.floor(Math.random() * msgs.length)];
+  const moonMsg = MOON_CARD_MSG[phase.id] || '';
+
+  // 今日の日付
+  const dows = ['日','月','火','水','木','金','土'];
+  const dateStr = `${today.getMonth()+1}月${today.getDate()}日（${dows[today.getDay()]}）`;
+
+  // ポップアップを生成
+  const popup = document.createElement('div');
+  popup.id = 'cardReadingPopup';
+  popup.style.cssText = `
+    position: fixed; inset: 0; z-index: 6000;
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 90px;
+    background: rgba(0,0,0,0.6);
+    animation: fadeIn 0.35s ease;
+  `;
+
+  const rankLabel = rank === 'S' ? '🌟 個人金運最強日' :
+                    rank === 'A' ? '💫 占星術吉日' :
+                    rank === 'B' ? '🌙 月次金運良好' : '✦ 今日のリーディング';
+
+  popup.innerHTML = `
+    <div style="
+      width: calc(100% - 32px); max-width: 388px;
+      background: linear-gradient(145deg, rgba(15,10,30,0.98), rgba(10,15,35,0.98));
+      border: 1px solid rgba(201,169,110,0.45);
+      border-radius: 28px; padding: 28px 24px 24px;
+      box-shadow: 0 -4px 40px rgba(0,0,0,0.6), 0 0 60px rgba(201,169,110,0.08);
+    ">
+      <div style="text-align:center; margin-bottom:6px;">
+        <span style="font-size:10px; letter-spacing:0.18em; color:rgba(201,169,110,0.6);">
+          ${dateStr} のカードリーディング
+        </span>
+      </div>
+      <div style="text-align:center; font-size:13px; font-weight:700;
+                  color:var(--gold-light); margin-bottom:18px; letter-spacing:0.06em;">
+        ${rankLabel}
+      </div>
+      <div style="font-family:'Playfair Display',serif; font-size:16px; color:#fff;
+                  line-height:1.9; margin-bottom:${moonMsg?'16px':'20px'};
+                  white-space:pre-line; text-align:center;">
+        ${main}
+      </div>
+      ${moonMsg ? `
+      <div style="background:rgba(180,150,255,0.1); border:1px solid rgba(180,150,255,0.25);
+                  border-radius:14px; padding:12px 16px; font-size:12px;
+                  color:rgba(210,190,255,0.85); line-height:1.7; margin-bottom:20px;">
+        ${moonMsg}
+      </div>` : ''}
+      <button onclick="document.getElementById('cardReadingPopup').remove()"
+        style="width:100%; padding:14px; background:linear-gradient(135deg,#C9A96E,#F0D9A8);
+               border:none; border-radius:16px; color:#1c1228;
+               font-family:'Zen Kaku Gothic New',sans-serif;
+               font-size:14px; font-weight:700; cursor:pointer; letter-spacing:0.08em;">
+        ✦ 受け取りました
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+
+  // 背景タップで閉じる
+  popup.addEventListener('click', e => {
+    if (e.target === popup) popup.remove();
+  });
+}
+
+
+// ============================================================
+// 🌙 月のバイオリズム・エンジン
+// ============================================================
+
+// ── 月齢計算（astronomy-engineで正確に計算）─────────────────
+function calcMoonAge(date) {
+  if (typeof Astronomy === 'undefined') {
+    // フォールバック：簡易式
+    const knownNewMoon = new Date('2026-05-18T06:37:00+09:00'); // 2026/5/18朔
+    const LUNAR_CYCLE  = 29.530588853;
+    const diffMs   = date.getTime() - knownNewMoon.getTime();
+    const diffDays = diffMs / (1000 * 60 * 60 * 24);
+    return ((diffDays % LUNAR_CYCLE) + LUNAR_CYCLE) % LUNAR_CYCLE;
+  }
+  try {
+    const at = Astronomy.MakeTime(date);
+    // 直近の新月を遡って検索（最大35日前）
+    const searchFrom = Astronomy.MakeTime(new Date(date.getTime() - 35 * 86400000));
+    const prevNewMoon = Astronomy.SearchMoonPhase(0, searchFrom, 40);
+    if (!prevNewMoon) throw new Error('新月が見つかりません');
+    const ageMs = date.getTime() - prevNewMoon.date.getTime();
+    const age = ageMs / 86400000;
+    return ((age % 29.530588853) + 29.530588853) % 29.530588853;
+  } catch(e) {
+    // フォールバック
+    const knownNewMoon = new Date('2026-05-18T06:37:00+09:00');
+    const LUNAR_CYCLE  = 29.530588853;
+    const diffMs   = date.getTime() - knownNewMoon.getTime();
+    return ((diffMs / 86400000 % LUNAR_CYCLE) + LUNAR_CYCLE) % LUNAR_CYCLE;
+  }
+}
+
+// ── 月相の判定（日本の伝統的な月の名前）────────────────────
+const MOON_PHASES = [
+  { id: 'new',          name: '新月',       emoji: '🌑', range: [0,    1.0],  day: '1' },
+  { id: 'mikadzuki',    name: '三日月',     emoji: '🌒', range: [1.0,  6.5],  day: '2〜6' },
+  { id: 'jyougen',      name: '上弦の月',   emoji: '🌓', range: [6.5,  8.5],  day: '7〜8' },
+  { id: 'waxing_gib',   name: '十日夜',     emoji: '🌔', range: [8.5,  12.5], day: '9〜12' },
+  { id: 'juusanya',     name: '十三夜月',   emoji: '🌔', range: [12.5, 14.0], day: '13〜14' },
+  { id: 'komochi',      name: '小望月',     emoji: '🌔', range: [14.0, 14.8], day: '14' },
+  { id: 'full',         name: '満月',       emoji: '🌕', range: [14.8, 16.0], day: '15' },
+  { id: 'izayoi',       name: '十六夜月',   emoji: '🌖', range: [16.0, 17.0], day: '16' },
+  { id: 'tachimachi',   name: '立待月',     emoji: '🌖', range: [17.0, 18.0], day: '17' },
+  { id: 'imachi',       name: '居待月',     emoji: '🌖', range: [18.0, 19.0], day: '18' },
+  { id: 'nemachi',      name: '寝待月',     emoji: '🌖', range: [19.0, 20.0], day: '19' },
+  { id: 'fukeachi',     name: '更待月',     emoji: '🌖', range: [20.0, 22.0], day: '20〜21' },
+  { id: 'last_q',       name: '下弦の月',   emoji: '🌗', range: [22.0, 24.0], day: '23' },
+  { id: 'nijyurokunya', name: '二十六夜月', emoji: '🌘', range: [24.0, 26.5], day: '24〜26' },
+  { id: 'waning_cresc', name: '有明月',     emoji: '🌘', range: [26.5, 29.53],day: '27〜29' },
+];
+
+function getMoonPhase(age) {
+  return MOON_PHASES.find(p => age >= p.range[0] && age < p.range[1])
+    || MOON_PHASES[0];
+}
+
+// ── 各フェーズの金運バイオリズム解説 ─────────────────────────
+const PHASE_MEANINGS = {
+  new: {
+    title: '種まきの日・意図を設定する',
+    body:  '新しいお金の流れを呼び込む最良のタイミング。<strong style="color:rgba(240,220,255,0.95)">欲しい収入・目標金額</strong>を具体的に紙に書いて宣言しましょう。',
+    action: '✦ 今すぐすること：新しい財布を使い始める・貯金目標を書く',
+    moneyMood: '⬆ 仕込み期',
+  },
+  mikadzuki: {
+    title: '行動を起こす・積み上げ期',
+    body:  'エネルギーが右肩上がりに高まる時期。<strong style="color:rgba(240,220,255,0.95)">営業・交渉・新規開拓</strong>など積極的な行動が実を結びやすい。',
+    action: '✦ 今すぐすること：新規の連絡・提案・行動を起こす',
+    moneyMood: '⬆⬆ 拡大期',
+  },
+  jyougen: {
+    title: '壁を乗り越える・決断の時',
+    body:  '半月の緊張感が決断を促します。<strong style="color:rgba(240,220,255,0.95)">迷っていた選択・投資の決断</strong>をするのに良いタイミング。',
+    action: '✦ 今すぐすること：保留中の決断をひとつ進める',
+    moneyMood: '⬆ 決断期',
+  },
+  waxing_gib: {
+    title: '磨き上げ・最後の調整',
+    body:  '満月に向けて加速するフェーズ。<strong style="color:rgba(240,220,255,0.95)">仕上げ・改善・プレゼン準備</strong>に最適。',
+    action: '✦ 今すぐすること：進行中のプロジェクトを磨き上げる',
+    moneyMood: '⬆⬆ 加速期',
+  },
+  juusanya: {
+    title: '十三夜・収穫前夜の高揚感',
+    body:  '満月直前の高まり。<strong style="color:rgba(240,220,255,0.95)">明日の満月に向けて意図を強化</strong>する絶好のタイミング。感謝と期待を高めておくと◎',
+    action: '✦ 今すぐすること：明日引き寄せたいことをノートに書く',
+    moneyMood: '⬆⬆⬆ 直前期',
+  },
+  komochi: {
+    title: '小望月・期待が満ちる夜',
+    body:  '満月まであと一歩。エネルギーが最高潮に近づいています。<strong style="color:rgba(240,220,255,0.95)">明日の満月への準備</strong>を整えて。',
+    action: '✦ 今すぐすること：感謝の気持ちを書き出す',
+    moneyMood: '✦✦ 直前期',
+  },
+  full: {
+    title: '引き寄せのピーク・収穫の時',
+    body:  '新月に種まきしたことが形になりやすい時期。エネルギーが最高潮に達し、<strong style="color:rgba(240,220,255,0.95)">金運・縁・チャンス</strong>が表面化します。',
+    action: '✦ 今すぐすること：欲しいものをリスト化して宇宙に宣言',
+    moneyMood: '✦✦✦ 収穫期',
+  },
+  izayoi: {
+    title: '十六夜月・満月の余韻',
+    body:  '「いざよい」は「ためらいながら出る」という意味。満月の余韻が続く豊かな夜。<strong style="color:rgba(240,220,255,0.95)">収穫の整理・感謝の表現</strong>に最適。',
+    action: '✦ 今すぐすること：今月良かったことを3つ書き出す',
+    moneyMood: '→ 余韻期',
+  },
+  tachimachi: {
+    title: '立待月・立って待つほど美しい月',
+    body:  'エネルギーが静かに落ち着き始めるタイミング。<strong style="color:rgba(240,220,255,0.95)">家計の見直し・収支の確認</strong>をするのに良い日。',
+    action: '✦ 今すぐすること：家計簿をつける・レシートを整理する',
+    moneyMood: '→ 安定期',
+  },
+  imachi: {
+    title: '居待月・座って待つ穏やかな夜',
+    body:  '月の出が遅くなり、静かに待つ夜。<strong style="color:rgba(240,220,255,0.95)">断捨離・不要なものの整理</strong>に取り組むと運気の流れがスムーズに。',
+    action: '✦ 今すぐすること：不要なアプリ・サブスクを解約する',
+    moneyMood: '↓ 整理期',
+  },
+  nemachi: {
+    title: '寝待月・横になって待つ月',
+    body:  'だんだん月の出が遅くなり、横になって待つほどに。<strong style="color:rgba(240,220,255,0.95)">ゆっくり休んで英気を養う</strong>日。無理な行動は控えて。',
+    action: '✦ 今すぐすること：早めに休む・お金の本を読む',
+    moneyMood: '↓ 休息期',
+  },
+  fukeachi: {
+    title: '更待月・夜更けに出る月',
+    body:  '夜更けまで待ってようやく顔を出す月。<strong style="color:rgba(240,220,255,0.95)">手放し・解放</strong>のエネルギーが高まる時期。古い執着を手放すと次のサイクルの豊かさを呼び込む。',
+    action: '✦ 今すぐすること：お金への不安を紙に書いて手放す',
+    moneyMood: '↓ 解放期',
+  },
+  last_q: {
+    title: '下弦の月・二十三夜',
+    body:  '月が左半分に光る下弦。「二十三夜待ち」として古来から信仰される夜。<strong style="color:rgba(240,220,255,0.95)">借金の返済・古い習慣の断ち切り・浄化</strong>に最適。',
+    action: '✦ 今すぐすること：不要なお金の習慣をひとつやめる',
+    moneyMood: '↓ 解放期',
+  },
+  nijyurokunya: {
+    title: '二十六夜月・闇に向かう月',
+    body:  '「二十六夜待ち」として江戸時代に信仰された月。静かに内省する時間。<strong style="color:rgba(240,220,255,0.95)">瞑想・次の新月への準備</strong>に使う日。',
+    action: '✦ 今すぐすること：次の新月に願うことを考え始める',
+    moneyMood: '↓ 充電期',
+  },
+  waning_cresc: {
+    title: '有明月・夜明けに残る月',
+    body:  '夜明けの空に細く残る月。月のエネルギーが最も静かになる時期。<strong style="color:rgba(240,220,255,0.95)">お金の学習・ビジョン作り</strong>に時間を使うと次の新月が豊かになります。',
+    action: '✦ 今すぐすること：お金の本を読む・次のサイクルの目標を立てる',
+    moneyMood: '↓ 充電期',
+  },
+};
+
+// ── 月の星座と金運傾向 ──────────────────────────────────────
+// 月が約2.5日ごとに移動する星座ごとの特性
+const MOON_SIGN_DATA = {
+  '牡羊座': { icon:'♈', desc:'行動力・スピード感が増す。即断即決の買い物運◎。衝動買い注意。', money:'金運 ↑ 行動', color:'rgba(255,120,100,0.3)' },
+  '牡牛座': { icon:'♉', desc:'物質的な豊かさへの感度が上がる最強の金運星座。長期投資・貯蓄の見直しに◎。', money:'金運 ✦✦ 最強', color:'rgba(100,200,100,0.3)' },
+  '双子座': { icon:'♊', desc:'情報収集・人脈からの金運。SNS・副業・スキルアップに良い日。', money:'金運 ↑ 情報', color:'rgba(255,220,100,0.3)' },
+  '蟹座':   { icon:'♋', desc:'家・家族に関わるお金のエネルギーが高まる。貯蓄・節約・家計管理に◎。', money:'金運 ↑ 安定', color:'rgba(150,200,255,0.3)' },
+  '獅子座': { icon:'♌', desc:'自己投資・表現・エンタメ系の金運◎。自分をブランディングするチャンス。', money:'金運 ↑↑ 自己投資', color:'rgba(255,180,50,0.3)' },
+  '乙女座': { icon:'♍', desc:'細かい収支管理・節税対策・健康投資に◎。コスパ重視の賢いお金使いの日。', money:'金運 → 堅実', color:'rgba(150,210,150,0.3)' },
+  'てんびん座':{ icon:'♎', desc:'バランス・美意識・対人運が高まる。パートナーシップからの金運に◎。', money:'金運 ↑↑', color:'rgba(200,150,255,0.3)' },
+  '蠍座':   { icon:'♏', desc:'投資・相続・他者のお金（8H）に関する運気。深い洞察でチャンスを掴む。', money:'金運 ↑↑ 投資', color:'rgba(180,50,100,0.3)' },
+  '射手座': { icon:'♐', desc:'海外・哲学・拡大の金運。スケールの大きな展開が来やすい日。過信注意。', money:'金運 ↑ 拡大', color:'rgba(255,150,50,0.3)' },
+  '山羊座': { icon:'♑', desc:'堅実な積み立て・キャリアアップ・節約に◎。長期目線の投資判断が冴える。', money:'金運 → 堅実', color:'rgba(150,150,180,0.3)' },
+  '水瓶座': { icon:'♒', desc:'テクノロジー・コミュニティ・革新からの金運。新しい収益モデルのヒントが◎。', money:'金運 ↑ 革新', color:'rgba(100,200,255,0.3)' },
+  '魚座':   { icon:'♓', desc:'直感・芸術・スピリチュアルな豊かさ。浪費しやすい面も。予算管理を意識して。', money:'金運 → 要注意', color:'rgba(150,180,255,0.3)' },
+};
+
+// 月の黄経から星座名を返す（astronomy-engineの正確な値を使用）
+function moonLonToSign(moonLon) {
+  const SIGNS = ['牡羊座','牡牛座','双子座','蟹座','獅子座','乙女座',
+                 'てんびん座','蠍座','射手座','山羊座','水瓶座','魚座'];
+  return SIGNS[Math.floor(((moonLon % 360) + 360) % 360 / 30) % 12];
+}
+
+// 次の主要月相の日付を計算（astronomy-engineで正確に）
+function getNextPhases(fromDate) {
+  const phases = [
+    { name: '新月',  emoji: '🌑', angle: 0   },
+    { name: '上弦',  emoji: '🌓', angle: 90  },
+    { name: '満月',  emoji: '🌕', angle: 180 },
+    { name: '下弦',  emoji: '🌗', angle: 270 },
+  ];
+
+  if (typeof Astronomy !== 'undefined') {
+    try {
+      const results = phases.map(p => {
+        const search = Astronomy.MakeTime(fromDate);
+        const found  = Astronomy.SearchMoonPhase(p.angle, search, 35);
+        if (!found) return null;
+        const jst = new Date(found.date.getTime() + 9 * 3600000);
+        const diffDays = Math.round((found.date.getTime() - fromDate.getTime()) / 86400000);
+        return {
+          ...p,
+          daysUntil: diffDays,
+          dateStr: `${jst.getMonth()+1}/${jst.getDate()}`,
+        };
+      }).filter(Boolean);
+      return results.sort((a,b) => a.daysUntil - b.daysUntil).slice(0, 4);
+    } catch(e) {}
+  }
+
+  // フォールバック：月齢から近似計算
+  const LUNAR_CYCLE = 29.530588853;
+  const age = calcMoonAge(fromDate);
+  return phases.map(p => {
+    const targetAge = p.angle / 360 * LUNAR_CYCLE;
+    let daysUntil = targetAge - age;
+    if (daysUntil <= 0) daysUntil += LUNAR_CYCLE;
+    const nextDate = new Date(fromDate.getTime() + daysUntil * 86400000);
+    return {
+      ...p,
+      daysUntil: Math.round(daysUntil),
+      dateStr: `${nextDate.getMonth()+1}/${nextDate.getDate()}`,
+    };
+  }).sort((a,b) => a.daysUntil - b.daysUntil).slice(0, 4);
+}
+
+// ── SVGホイール描画 ────────────────────────────────────────
+function drawMoonWheel(age) {
+  const total = 29.53;
+  const dotsEl   = document.getElementById('moonDots');
+  const markerEl = document.getElementById('todayMarker');
+  dotsEl.innerHTML = ''; markerEl.innerHTML = '';
+
+  const phaseEmojis = ['🌑','🌒','🌒','🌒','🌒','🌒','🌒','🌓',
+                       '🌔','🌔','🌔','🌔','🌔','🌔','🌕','🌕',
+                       '🌖','🌖','🌖','🌖','🌖','🌖','🌗',
+                       '🌘','🌘','🌘','🌘','🌘','🌘'];
+
+  for (let i = 0; i < 29; i++) {
+    const angle = (i / 29) * 2 * Math.PI - Math.PI / 2;
+    const r = 104;
+    const x = r * Math.cos(angle);
+    const y = r * Math.sin(angle);
+    const isPast = i <= Math.floor(age);
+    const isNow  = i === Math.floor(age);
+
+    const text = document.createElementNS('http://www.w3.org/2000/svg','text');
+    text.setAttribute('x', x); text.setAttribute('y', y);
+    text.setAttribute('text-anchor','middle');
+    text.setAttribute('dominant-baseline','central');
+    text.setAttribute('font-size', isNow ? '16' : '11');
+    text.setAttribute('opacity', isPast ? '1' : '0.3');
+    text.textContent = phaseEmojis[i] || '🌑';
+    dotsEl.appendChild(text);
+
+    // 今日マーカー（光るリング）
+    if (isNow) {
+      const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      circle.setAttribute('cx', x); circle.setAttribute('cy', y);
+      circle.setAttribute('r','12');
+      circle.setAttribute('fill','none');
+      circle.setAttribute('stroke','rgba(200,180,255,0.7)');
+      circle.setAttribute('stroke-width','1.5');
+      markerEl.appendChild(circle);
+
+      // 今日ラベル
+      const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+      lbl.setAttribute('x', x * 1.28); lbl.setAttribute('y', y * 1.28);
+      lbl.setAttribute('text-anchor','middle');
+      lbl.setAttribute('dominant-baseline','central');
+      lbl.setAttribute('font-size','8');
+      lbl.setAttribute('fill','rgba(220,200,255,0.9)');
+      lbl.textContent = '今日';
+      markerEl.appendChild(lbl);
+    }
+  }
+}
+
+// ── バイオリズムUI更新メイン（transitMoonLon: astronomy-engineで計算した月黄経）─
+function updateMoonBiorhythm(transitMoonLon) {
+  const now   = new Date();
+  const age   = calcMoonAge(now);
+  const phase = getMoonPhase(age);
+  const meaning  = PHASE_MEANINGS[phase.id] || PHASE_MEANINGS.new;
+
+  // astronomy-engineの月黄経があればそれを使い、なければ月齢から推定
+  const sign     = transitMoonLon != null
+    ? moonLonToSign(transitMoonLon)
+    : moonLonToSign(age * (360 / 29.53)); // フォールバック
+  const signData = MOON_SIGN_DATA[sign] || MOON_SIGN_DATA['てんびん座'];
+  const nextPhases = getNextPhases(now);
+
+  drawMoonWheel(age);
+
+  document.getElementById('centerMoonEmoji').textContent  = phase.emoji;
+  document.getElementById('centerDayText').textContent    = `Day ${Math.floor(age)+1}`;
+  document.getElementById('centerPhaseText').textContent  = phase.name;
+
+  document.getElementById('phaseMoonBig').textContent   = phase.emoji;
+  document.getElementById('phaseName').textContent      = phase.name;
+  document.getElementById('phaseSignText').textContent  = `${sign} 通過中`;
+  document.getElementById('phaseDayBadge').textContent  = `サイクル Day ${Math.floor(age)+1} / 29.5`;
+
+  const grid = document.getElementById('nextPhasesGrid');
+  grid.innerHTML = nextPhases.map(p => `
+    <div class="next-phase-pill">
+      <div class="npp-icon">${p.emoji}</div>
+      <div class="npp-text">
+        <div class="npp-label">${p.name}</div>
+        <div class="npp-days">${p.daysUntil === 0 ? '今日！' : `あと${p.daysUntil}日`}</div>
+        <div class="npp-date">${p.dateStr}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('bmPhaseLabel').textContent = `${phase.emoji} ${phase.name}フェーズ（Day ${phase.day}）`;
+  document.getElementById('bmTitle').textContent      = meaning.title;
+  document.getElementById('bmBody').innerHTML         = meaning.body;
+  document.getElementById('bmAction').textContent     = meaning.action;
+
+  document.getElementById('mssIcon').textContent  = signData.icon;
+  document.getElementById('mssName').textContent  = `月 in ${sign}`;
+  document.getElementById('mssDesc').textContent  = signData.desc;
+  document.getElementById('mssMoney').textContent = signData.money;
+
+  document.getElementById('moonIcon').textContent   = phase.emoji;
+  document.getElementById('moonTitle').textContent  = `${phase.name} — ${sign} Day${Math.floor(age)+1}`;
+  document.getElementById('moonSub').textContent    = meaning.moneyMood + '  ✦  ' + meaning.title;
+}
+// ※ updateMoonBiorhythm() の呼び出しは startApp() 内で transit.moon を渡して行います
+
+
+// ============================================================
+// ── startApp：出生データを受け取って全計算→UI反映
+// ============================================================
+function loadProgress(pct) {
+  const el = document.getElementById('loadBar');
+  if (el) el.style.width = pct + '%';
+}
+
+async function startApp(cfg) {
+  const overlay = document.getElementById('loadingOverlay');
+  if (overlay) { overlay.style.opacity = '1'; overlay.style.display = 'flex'; }
+
+  // ヘッダーにニックネーム表示
+  const nameEl = document.getElementById('app-username');
+  if (nameEl && cfg.name) nameEl.textContent = `${cfg.name} の星盤`;
+
+  try {
+    loadProgress(20);
+
+    if (typeof Astronomy === 'undefined') {
+      throw new Error('astronomy-engine の読み込みに失敗しました。インターネット接続を確認してください。');
+    }
+    loadProgress(40);
+
+    // ── ネイタル計算（出生時の天体位置）
+    const natal = calcNatalPositions(cfg);
+    loadProgress(70);
+
+    // ── トランジット計算（今日・現在時刻）
+    const transit = calcTransitPositions(new Date(), cfg.lat, cfg.lon);
+    loadProgress(90);
+
+    // ── UI に反映
+    updateUI(natal, transit);
+    updateMoonBiorhythm(transit.moon);
+    loadProgress(100);
+
+    // ローディングをフェードアウト
+    await new Promise(r => setTimeout(r, 400));
+    if (overlay) {
+      overlay.style.transition = 'opacity 0.6s ease';
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        // ローディング完了後にアラート判定
+        setTimeout(() => checkOpenAlert(natal), 600);
+      }, 600);
+    }
+
+  } catch(err) {
+    console.error('占星術計算エラー:', err);
+    if (overlay) overlay.innerHTML = `
+      <div style="text-align:center; color:rgba(255,180,180,0.9); padding:32px;
+                  font-family:'Zen Kaku Gothic New',sans-serif; max-width:320px;">
+        <div style="font-size:40px; margin-bottom:16px;">⚠️</div>
+        <div style="font-size:14px; margin-bottom:10px; line-height:1.6;">${err.message}</div>
+        <button onclick="location.reload()" style="
+          margin-top:16px; padding:10px 28px;
+          background:rgba(201,169,110,0.2); border:1px solid rgba(201,169,110,0.5);
+          border-radius:20px; color:#F0D9A8; font-size:13px; cursor:pointer;">
+          再読み込み
+        </button>
+      </div>`;
+  }
+}
+
+
+// ============================================================
+// ── エントリーポイント
+//    localStorage にデータがある → そのまま起動
+//    ない → 入力画面を表示
+// ============================================================
+
+// ============================================================
+// 🔔 通知エンジン
+// ============================================================
+
+const NOTIFY_KEY = 'kinsei_notify_mode';   // 'every' | 'lucky' | 'off'
+const NOTIFY_SEEN_KEY = 'kinsei_notify_seen'; // 最後にアラートを見た日付
+
+function getNotifyMode() {
+  return localStorage.getItem(NOTIFY_KEY) || 'every';
+}
+
+function setNotifyMode(mode) {
+  localStorage.setItem(NOTIFY_KEY, mode);
+  // チェックマーク更新
+  ['every','lucky','off'].forEach(m => {
+    const card  = document.getElementById('ntMode-' + m);
+    const check = document.getElementById('ntCheck-' + m);
+    if (card)  card.classList.toggle('active', m === mode);
+    if (check) check.style.display = m === mode ? 'flex' : 'none';
+  });
+}
+
+// アプリ起動時のアラート判定（メイン画面に重ねて表示）
+function checkOpenAlert(natal) {
+  const mode = getNotifyMode();
+  if (mode === 'off') return;
+
+  // 今日すでに見ていたらスキップ
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
+  const lastSeen = localStorage.getItem(NOTIFY_SEEN_KEY);
+  if (lastSeen === todayStr) return;
+
+  const info = getDayInfo(today.getFullYear(), today.getMonth()+1, today.getDate());
+
+  // 毎日モード：毎回表示
+  // 吉日のみモード：luckyScore >= 25 の日だけ表示
+  const shouldShow = mode === 'every' || (mode === 'lucky' && info.luckyScore >= 25);
+  if (!shouldShow) return;
+
+  // アラートを表示
+  showOpenAlert(info, todayStr);
+}
+
+function showOpenAlert(info, todayStr) {
+  // オーバーレイを作成
+  const overlay = document.createElement('div');
+  overlay.id = 'openAlertOverlay';
+  overlay.style.cssText = `
+    position: fixed; inset: 0; z-index: 7000;
+    background: rgba(0,0,0,0.75);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: 90px;
+    animation: fadeIn 0.4s ease;
+  `;
+
+  const topTag  = info.tags[0];
+  const icon    = info.tensya ? '✨' :
+                  info.topRank === 'S' ? '🌟' :
+                  info.topRank === 'A' ? '💫' :
+                  info.ichiman ? '💰' : info.tora ? (info.tora==='寅'?'🐅':'🐍') : '🌙';
+  const title   = info.tensya           ? '✨ 天赦日！最強の吉日です' :
+                  info.topRank === 'S'  ? '🌟 あなたの個人金運最強日！' :
+                  info.topRank === 'A'  ? '💫 占星術吉日です' :
+                  info.ichiman && !info.fusei ? '💰 一粒万倍日です' :
+                  info.tora             ? `${info.tora==='寅'?'🐅':'🐍'} ${info.tora}の日です` :
+                  info.fusei            ? '🚫 今日は不成就日' : '🌙 今日の金運チェック';
+
+  const tagHTML = info.tags.map(t =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;
+      background:rgba(255,255,255,0.08);border-radius:10px;
+      padding:3px 10px;font-size:11px;color:rgba(255,255,255,0.8);
+      margin:2px;">${t.label}</span>`
+  ).join('');
+
+  const descHTML = info.descs.slice(0,2).join('<br>');
+
+  overlay.innerHTML = `
+    <div style="
+      width: calc(100% - 32px); max-width: 388px;
+      background: linear-gradient(145deg, rgba(20,15,35,0.98), rgba(15,20,40,0.98));
+      border: 1px solid rgba(201,169,110,0.4);
+      border-radius: 28px; padding: 28px 24px 24px;
+      box-shadow: 0 -8px 40px rgba(0,0,0,0.5), 0 0 60px rgba(155,111,255,0.1);
+    ">
+      <div style="text-align:center; font-size:48px; margin-bottom:12px;">${icon}</div>
+      <div style="font-family:'Playfair Display',serif; font-size:18px; color:#fff;
+                  text-align:center; margin-bottom:10px;">${title}</div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;margin-bottom:14px;">
+        ${tagHTML}
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.65);line-height:1.8;
+                  margin-bottom:18px;">${descHTML}</div>
+      <div style="display:flex;gap:10px;">
+        <button onclick="closeOpenAlert()"
+          style="flex:1;padding:13px;background:rgba(255,255,255,0.07);
+                 border:1px solid rgba(255,255,255,0.15);border-radius:14px;
+                 color:rgba(255,255,255,0.6);font-size:13px;cursor:pointer;
+                 font-family:'Zen Kaku Gothic New',sans-serif;">
+          閉じる
+        </button>
+        <button onclick="closeOpenAlert(); switchTab('calendar')"
+          style="flex:2;padding:13px;
+                 background:linear-gradient(135deg,#C9A96E,#F0D9A8);
+                 border:none;border-radius:14px;
+                 color:#1c1228;font-size:13px;font-weight:700;cursor:pointer;
+                 font-family:'Zen Kaku Gothic New',sans-serif;">
+          カレンダーで確認 📅
+        </button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  // 今日見た記録を保存
+  localStorage.setItem(NOTIFY_SEEN_KEY, todayStr);
+}
+
+function closeOpenAlert() {
+  const el = document.getElementById('openAlertOverlay');
+  if (el) {
+    el.style.transition = 'opacity 0.3s ease';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  }
+}
+
+// 通知設定画面の描画
+function renderNotifyPage() {
+  const mode = getNotifyMode();
+  setNotifyMode(mode); // チェックマーク初期化
+
+  // 今日のアラートカード
+  const today = new Date();
+  const info  = getDayInfo(today.getFullYear(), today.getMonth()+1, today.getDate());
+  const alertCard = document.getElementById('ntTodayAlert');
+  if (alertCard && info.luckyScore > 0) {
+    alertCard.style.display = 'flex';
+    document.getElementById('ntAlertIcon').textContent =
+      info.tensya ? '✨' : info.topRank === 'S' ? '🌟' :
+      info.topRank === 'A' ? '💫' : info.ichiman ? '💰' : '🌙';
+    document.getElementById('ntAlertTitle').textContent =
+      `${today.getMonth()+1}月${today.getDate()}日の金運`;
+    document.getElementById('ntAlertText').innerHTML =
+      info.tags.map(t=>t.label).join(' ') +
+      (info.descs[0] ? '<br>' + info.descs[0] : '');
+  }
+
+  // 今後30日の吉日予報
+  renderForecast();
+}
+
+function renderForecast() {
+  const listEl = document.getElementById('ntForecastList');
+  if (!listEl) return;
+
+  const today   = new Date();
+  const dows    = ['日','月','火','水','木','金','土'];
+  const forecast = [];
+
+  for (let i = 0; i <= 30; i++) {
+    const d    = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    const y    = d.getFullYear(), m = d.getMonth()+1, day = d.getDate();
+    const info = getDayInfo(y, m, day);
+    if (info.luckyScore >= 25 || info.tensya) {
+      const diffDays = i;
+      forecast.push({ y, m, day, info, dow: dows[d.getDay()], diffDays });
+    }
+  }
+
+  if (!forecast.length) {
+    listEl.innerHTML = '<div style="padding:16px;font-size:12px;color:rgba(255,255,255,0.3);text-align:center;">今後30日に目立った吉日はありません</div>';
+    return;
+  }
+
+  listEl.innerHTML = forecast.slice(0, 10).map(({ y, m, day, info, dow, diffDays }) => {
+    const icons = info.tags.map(t => {
+      const map = { tensya:'✨', ichiryuu:'💰', astro: info.topRank==='S'?'🌟':info.topRank==='A'?'💫':'🌙', tora: info.tora==='寅'?'🐅':'🐍', fusei:'🚫' };
+      return map[t.cls] || '';
+    }).join('');
+    const daysLabel = diffDays === 0 ? '🌟 今日！' : diffDays === 1 ? '明日' : `あと${diffDays}日`;
+    return `
+      <div class="nt-forecast-item" onclick="switchTab('calendar')">
+        <div class="nt-forecast-date">${m}/${day}（${dow}）</div>
+        <div class="nt-forecast-icons">${icons}</div>
+        <div class="nt-forecast-body">
+          <div class="nt-forecast-title">${info.tags.filter(t=>t.cls!=='fusei').map(t=>t.label).join(' ')}</div>
+          <div class="nt-forecast-sub">${info.rokuyou}</div>
+        </div>
+        <div class="nt-forecast-days">${daysLabel}</div>
+      </div>`;
+  }).join('');
+}
+
+// ============================================================
+
+// ── タブ切り替え ────────────────────────────────────────────
+function switchTab(tab) {
+  const mainPage   = document.querySelector('.page');
+  const calPage    = document.getElementById('calendarPage');
+  const mydataPage = document.getElementById('mydataPage');
+
+  // 全ページ非表示
+  if (mainPage)   mainPage.style.display   = 'none';
+  if (calPage)    calPage.style.display    = 'none';
+  if (mydataPage) mydataPage.style.display = 'none';
+
+  if (tab === 'today') {
+    if (mainPage) mainPage.style.display = 'flex';
+  } else if (tab === 'calendar') {
+    if (calPage) {
+      calPage.style.display = 'flex';
+      // ネイタルキャッシュがなければ計算してからカレンダー描画
+      if (!window._natalCache) {
+        const cfg = loadBirthConfig();
+        if (cfg) window._natalCache = calcNatalPositions(cfg);
+      }
+      // 月が変わったらキャッシュをリセット
+      astroGoodDayCache && Object.keys(astroGoodDayCache).forEach(k => delete astroGoodDayCache[k]);
+      renderCalendar();
+    }
+  } else if (tab === 'mydata') {
+    if (mydataPage) { mydataPage.style.display = 'flex'; renderMydata(); }
+  } else if (tab === 'notify') {
+    const notifyPage = document.getElementById('notifyPage');
+    if (notifyPage) { notifyPage.style.display = 'flex'; renderNotifyPage(); }
+  }
+
+  ['today','calendar','mydata','notify'].forEach(id => {
+    const el = document.getElementById('nav-' + id);
+    if (el) el.classList.toggle('active', id === tab);
+  });
+}
+
+// ============================================================
+// 👤 マイデータ画面エンジン
+// ============================================================
+
+// 天体ごとの表示設定
+const PLANET_CONFIG = [
+  { key:'sun',     sym:'☉', name:'太陽',   color:'#FFD700', meaning:'自我・生命力' },
+  { key:'moon',    sym:'☽', name:'月',     color:'#C8C8FF', meaning:'感情・習慣' },
+  { key:'mercury', sym:'☿', name:'水星',   color:'#A8D8A8', meaning:'知性・言語' },
+  { key:'venus',   sym:'♀', name:'金星',   color:'#FFB6C1', meaning:'愛・美・金運' },
+  { key:'mars',    sym:'♂', name:'火星',   color:'#FF6B6B', meaning:'行動力・勝負' },
+  { key:'jupiter', sym:'♃', name:'木星',   color:'#FFD4A0', meaning:'拡大・幸運' },
+  { key:'saturn',  sym:'♄', name:'土星',   color:'#B8A898', meaning:'制限・忍耐・蓄財' },
+  { key:'uranus',  sym:'⛢', name:'天王星', color:'#88DDEE', meaning:'革新・突発' },
+  { key:'neptune', sym:'♆', name:'海王星', color:'#8888FF', meaning:'夢・直感' },
+  { key:'pluto',   sym:'♇', name:'冥王星', color:'#CC88AA', meaning:'変容・再生' },
+  { key:'asc',     sym:'Asc',name:'ASC',   color:'#F0D9A8', meaning:'外見・第一印象' },
+  { key:'mc',      sym:'MC', name:'MC',    color:'#C9A96E', meaning:'天職・社会的地位' },
+  { key:'pof',     sym:'✦',  name:'POF',   color:'#FFE4B5', meaning:'幸運の星' },
+];
+
+// 星座ごとの「お金タイプ」診断
+const MONEY_TYPE_BY_SIGN = {
+  '牡羊座': { emoji:'🔥', title:'直感型・スピード投資家', sub:'火の星座 ／ 活動宮',
+    body:'直感でお金を動かすのが得意。スピードが命で、迷ったら後回しにしない積極性が武器。ただし飽きやすいので、長期保有より回転率を上げる投資向き。',
+    tags:['スピード重視','直感買い','新規事業','短期投資'] },
+  '牡牛座': { emoji:'💎', title:'コツコツ蓄財の守り上手', sub:'土の星座 ／ 不動宮',
+    body:'安定と蓄積を愛するお金の名人。贅沢好きだが、しっかり貯めてから使うタイプ。不動産・貯蓄・長期投資との相性が抜群。',
+    tags:['長期積立','不動産','堅実','ブランド好き'] },
+  '双子座': { emoji:'📱', title:'情報収集で稼ぐ頭脳派', sub:'風の星座 ／ 柔軟宮',
+    body:'情報とコミュニケーションで収益を生み出すタイプ。副業・複数収入・SNS運用が得意。ただし分散しすぎて中途半端になりがち。',
+    tags:['副業向き','情報ビジネス','SNS収益','分散投資'] },
+  '蟹座':   { emoji:'🏠', title:'家族・安心のための堅実家', sub:'水の星座 ／ 活動宮',
+    body:'家族や大切な人のためにお金を使うモチベーションが強い。不動産・食・生活必需品への投資センスが高い。感情でお金を使いがちな面も。',
+    tags:['家族のため','不動産','食ビジネス','感情買い注意'] },
+  '獅子座': { emoji:'👑', title:'自己投資で輝く主役タイプ', sub:'火の星座 ／ 不動宮',
+    body:'自分に投資することで収益が跳ね上がるタイプ。見た目・ブランド・自己表現にお金を使うと巡り巡って豊かさが戻ってくる。',
+    tags:['自己投資','エンタメ','ブランディング','勝負服'] },
+  '乙女座': { emoji:'📊', title:'分析力ナンバーワンの節約賢者', sub:'土の星座 ／ 柔軟宮',
+    body:'コスパを徹底的に分析する賢者タイプ。無駄なお金を一切使わない。家計管理・節税・投資の細かいリサーチが得意。',
+    tags:['節税','コスパ重視','家計管理','分析投資'] },
+  '天秤座': { emoji:'⚖️', title:'パートナーシップで豊かになる', sub:'風の星座 ／ 活動宮',
+    body:'二人三脚・パートナーシップでお金が増えるタイプ。共同事業・結婚・ビジネスパートナーとの連携でシナジーが生まれる。',
+    tags:['共同投資','パートナー事業','バランス','美的センス'] },
+  '蠍座':   { emoji:'🎰', title:'投資・他者資本で一発逆転', sub:'水の星座 ／ 不動宮',
+    body:'8ハウスのエネルギーが強く、他者のお金（投資・融資・相続）を動かす才能がある。深く調査してリスクを取れる本格投資家タイプ。',
+    tags:['投資家気質','他者資本','リスク管理','深掘り調査'] },
+  '射手座': { emoji:'🌍', title:'スケール大きな拡大思考', sub:'火の星座 ／ 柔軟宮',
+    body:'スケールの大きな発想でお金を引き寄せるタイプ。海外・教育・出版・精神的価値への投資が吉。楽観的すぎて詰めが甘くなることも。',
+    tags:['海外投資','教育投資','スケール','楽観的'] },
+  '山羊座': { emoji:'🏔️', title:'長期計画の頂点を目指す堅実派', sub:'土の星座 ／ 活動宮',
+    body:'時間をかけて確実にキャリアと資産を積み上げる本物の堅実家。不動産・株式長期保有・キャリア投資との相性◎。',
+    tags:['長期保有','キャリア投資','不動産','年金・積立'] },
+  '水瓶座': { emoji:'⚡', title:'革新技術で時代を先取り', sub:'風の星座 ／ 不動宮',
+    body:'テクノロジー・コミュニティ・社会変革にお金の嗅覚が働くタイプ。仮想通貨・スタートアップ・革新的ビジネスへの先行投資が向いている。',
+    tags:['テック投資','革新重視','コミュニティ','先行投資'] },
+  '魚座':   { emoji:'🌊', title:'直感とスピリチュアルの豊かさ', sub:'水の星座 ／ 柔軟宮',
+    body:'直感でお金の波に乗るタイプ。アート・ヒーリング・スピリチュアルな分野での収益センスが高い。一方、境界線が曖昧でお金が漏れやすい面も。',
+    tags:['直感投資','アート','ヒーリング','予算管理注意'] },
+};
+
+// ネイタルチャート SVG 描画
+function drawNatalChart(natal) {
+  const svg = document.getElementById('natalChartSVG');
+  if (!svg) return;
+  svg.innerHTML = '';
+
+  const R  = 118; // 外側リング
+  const Rh = 90;  // ハウスリング
+  const Ri = 62;  // 内側リング
+  const cx = 0, cy = 0;
+
+  // 背景
+  const bg = `
+    <circle cx="0" cy="0" r="${R}"  fill="rgba(255,255,255,0.02)" stroke="rgba(201,169,110,0.2)" stroke-width="1"/>
+    <circle cx="0" cy="0" r="${Rh}" fill="rgba(255,255,255,0.01)" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="3 4"/>
+    <circle cx="0" cy="0" r="${Ri}" fill="rgba(0,0,0,0.3)"        stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  `;
+
+  // 12星座ピザ（30度ずつ）
+  const signColors = [
+    '#FF6B6B','#8BC34A','#FFD54F','#4DB6AC',
+    '#FF8A65','#A1887F','#90CAF9','#CE93D8',
+    '#F48FB1','#80CBC4','#81D4FA','#B39DDB'
+  ];
+  const signSymbols = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+  let signsSVG = '';
+  for (let i = 0; i < 12; i++) {
+    const startAngle = (i * 30 - 90) * Math.PI / 180;
+    const endAngle   = ((i + 1) * 30 - 90) * Math.PI / 180;
+    const midAngle   = ((i * 30 + 15) - 90) * Math.PI / 180;
+    const x1 = R * Math.cos(startAngle), y1 = R * Math.sin(startAngle);
+    const x2 = R * Math.cos(endAngle),   y2 = R * Math.sin(endAngle);
+    const lx = (R - 10) * Math.cos(midAngle), ly = (R - 10) * Math.sin(midAngle);
+    signsSVG += `
+      <path d="M0,0 L${x1},${y1} A${R},${R} 0 0,1 ${x2},${y2} Z"
+            fill="${signColors[i]}18" stroke="${signColors[i]}40" stroke-width="0.5"/>
+      <text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central"
+            font-size="9" fill="${signColors[i]}CC">${signSymbols[i]}</text>
+    `;
+  }
+
+  // ハウス境界線（Equal House）
+  let housesSVG = '';
+  if (natal.houseCusps) {
+    natal.houseCusps.forEach((cusp, i) => {
+      const angle = (cusp - 90) * Math.PI / 180;
+      const x1 = Ri * Math.cos(angle), y1 = Ri * Math.sin(angle);
+      const x2 = Rh * Math.cos(angle), y2 = Rh * Math.sin(angle);
+      const lx = (Rh + 10) * Math.cos(angle), ly = (Rh + 10) * Math.sin(angle);
+      housesSVG += `
+        <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
+              stroke="rgba(255,255,255,0.15)" stroke-width="${i === 0 || i === 3 || i === 6 || i === 9 ? 1.5 : 0.7}"/>
+        <text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central"
+              font-size="7" fill="rgba(255,255,255,0.3)">${i+1}</text>
+      `;
+    });
+  }
+
+  // 天体プロット
+  const plotPlanets = PLANET_CONFIG.filter(p =>
+    !['asc','mc','pof'].includes(p.key) && natal[p.key] != null
+  );
+
+  // 重なり防止：同じ付近の天体を少しずらす
+  const placed = [];
+  function adjustedAngle(lon) {
+    let angle = lon;
+    for (const p of placed) {
+      if (Math.abs(((angle - p) % 360 + 360) % 360 - 180) > 170 ||
+          Math.abs(((angle - p) % 360 + 360) % 360) < 12) {
+        angle += 13;
+      }
+    }
+    placed.push(angle);
+    return angle;
+  }
+
+  let planetsSVG = '';
+  plotPlanets.forEach(p => {
+    const lon   = natal[p.key];
+    const adjLon = adjustedAngle(lon);
+    const angle  = (adjLon - 90) * Math.PI / 180;
+    const Rp    = Ri - 14;
+    const px    = Rp * Math.cos(angle);
+    const py    = Rp * Math.sin(angle);
+    // 実際の位置から点線を引く
+    const lineAngle = (lon - 90) * Math.PI / 180;
+    const lx1 = (Ri - 3) * Math.cos(lineAngle), ly1 = (Ri - 3) * Math.sin(lineAngle);
+    planetsSVG += `
+      <circle cx="${px}" cy="${py}" r="11" fill="rgba(0,0,0,0.6)"
+              stroke="${p.color}88" stroke-width="1"/>
+      <text x="${px}" y="${py - 2}" text-anchor="middle" dominant-baseline="central"
+            font-size="9" fill="${p.color}">${p.sym}</text>
+      <text x="${px}" y="${py + 7}" text-anchor="middle" dominant-baseline="central"
+            font-size="6" fill="${p.color}99">
+        ${(lon % 30).toFixed(0)}°
+      </text>
+    `;
+  });
+
+  // ASC・MC のライン
+  let angleLinesSVG = '';
+  if (natal.asc != null) {
+    const a = (natal.asc - 90) * Math.PI / 180;
+    angleLinesSVG += `
+      <line x1="${-R * Math.cos(a)}" y1="${-R * Math.sin(a)}"
+            x2="${R * Math.cos(a)}"  y2="${R * Math.sin(a)}"
+            stroke="rgba(240,217,168,0.5)" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="${(R+10)*Math.cos(a)}" y="${(R+10)*Math.sin(a)}"
+            text-anchor="middle" dominant-baseline="central"
+            font-size="9" fill="#F0D9A8">Asc</text>
+    `;
+  }
+  if (natal.mc != null) {
+    const a = (natal.mc - 90) * Math.PI / 180;
+    angleLinesSVG += `
+      <line x1="${-Rh * Math.cos(a)}" y1="${-Rh * Math.sin(a)}"
+            x2="${Rh * Math.cos(a)}"  y2="${Rh * Math.sin(a)}"
+            stroke="rgba(201,169,110,0.4)" stroke-width="1" stroke-dasharray="4 3"/>
+      <text x="${(R+10)*Math.cos(a)}" y="${(R+10)*Math.sin(a)}"
+            text-anchor="middle" dominant-baseline="central"
+            font-size="9" fill="#C9A96E">MC</text>
+    `;
+  }
+
+  svg.innerHTML = bg + signsSVG + housesSVG + angleLinesSVG + planetsSVG;
+
+  // 凡例
+  const legend = document.getElementById('mdChartLegend');
+  if (legend) {
+    legend.innerHTML = plotPlanets.map(p =>
+      `<div class="md-legend-item">
+        <div class="md-legend-dot" style="background:${p.color};"></div>
+        <span>${p.sym} ${p.name}</span>
+      </div>`
+    ).join('');
+  }
+}
+
+// 天体テーブル描画
+function renderPlanetTable(natal) {
+  const el = document.getElementById('mdPlanetTable');
+  if (!el) return;
+
+  const moneyPlanets = new Set([
+    natal.house2RulerPlanet,
+    natal.house5RulerPlanet,
+    natal.house8RulerPlanet,
+  ]);
+
+  el.innerHTML = PLANET_CONFIG.map(p => {
+    if (natal[p.key] == null) return '';
+    const lon     = natal[p.key];
+    const sign    = getSign(lon);
+    const deg     = (lon % 30).toFixed(1);
+    const isMoney = moneyPlanets.has(p.key);
+    return `<div class="md-table-row">
+      <div class="md-table-sym"  style="color:${p.color}">${p.sym}</div>
+      <div class="md-table-name" style="color:rgba(255,255,255,0.45)">${p.name}</div>
+      <div class="md-table-sign">${sign} ${deg}°</div>
+      ${isMoney ? `<span class="md-table-badge">金運</span>` : ''}
+      <div class="md-table-deg" style="color:rgba(255,255,255,0.25);margin-left:auto">${p.meaning}</div>
+    </div>`;
+  }).join('');
+}
+
+// ハウステーブル描画
+function renderHouseTable(natal) {
+  const el = document.getElementById('mdHouseTable');
+  if (!el || !natal.houseCusps) return;
+  const houseNames = [
+    '自己・外見','財産・金運','知性・言語','家庭・ルーツ',
+    '恋愛・投機','健康・仕事','パートナー','遺産・他者資本',
+    '哲学・海外','社会的地位','友人・利益','秘密・潜在'
+  ];
+  el.innerHTML = natal.houseCusps.map((cusp, i) => {
+    const isKey = [1,4,7].includes(i); // 2H・5H・8H を強調
+    return `<div class="md-table-row">
+      <div class="md-table-sym" style="color:rgba(255,255,255,0.3);font-size:11px;">${i+1}H</div>
+      <div class="md-table-name" style="color:rgba(255,255,255,0.35);font-size:10px;">${houseNames[i]}</div>
+      <div class="md-table-sign" style="${isKey?'color:var(--gold-light);':''}">
+        ${getSign(cusp)} ${(cusp % 30).toFixed(1)}°
+      </div>
+      <div class="md-table-deg" style="color:rgba(255,255,255,0.2);">${getRuler(cusp)}</div>
+    </div>`;
+  }).join('');
+}
+
+// お金タイプ描画（太陽星座ベース）
+function renderMoneyType(natal) {
+  const el = document.getElementById('mdMoneyType');
+  if (!el || natal.sun == null) return;
+  const sign = getSign(natal.sun);
+  const type = MONEY_TYPE_BY_SIGN[sign] || MONEY_TYPE_BY_SIGN['牡羊座'];
+  el.innerHTML = `
+    <div class="md-type-emoji">${type.emoji}</div>
+    <div class="md-type-title">${type.title}</div>
+    <div class="md-type-sub">太陽星座：${sign} ／ ${type.sub}</div>
+    <div class="md-type-body">${type.body}</div>
+    <div class="md-type-tags">${type.tags.map(t=>`<span class="md-type-tag">${t}</span>`).join('')}</div>
+  `;
+}
+
+// プロフィールカード描画
+function renderProfile(cfg, natal) {
+  const avatarEmojis = ['🌟','✨','🌙','⭐','💫','🔮','🌸','🌺','🦋','🌈'];
+  const emojiIdx = (cfg.year + cfg.month + cfg.day) % avatarEmojis.length;
+
+  document.getElementById('mdAvatar').textContent = avatarEmojis[emojiIdx];
+  document.getElementById('mydataNameBadge').textContent = cfg.name || '星見人';
+  document.getElementById('mdName').textContent  = cfg.name || '星見人';
+  document.getElementById('mdBirth').textContent =
+    `${cfg.year}年${cfg.month}月${cfg.day}日 ${cfg.timeUnknown ? '時刻不明' : `${cfg.hour}:${String(cfg.minute).padStart(2,'0')}`}`;
+  document.getElementById('mdPlace').textContent =
+    cfg.pref ? `${cfg.pref}（緯度${parseFloat(cfg.lat).toFixed(2)}°）` : `緯度 ${parseFloat(cfg.lat).toFixed(2)}°`;
+}
+
+// マイデータ画面まとめて描画
+let mydataRendered = false;
+function renderMydata() {
+  const cfg = loadBirthConfig();
+  if (!cfg) { switchTab('today'); showOnboarding(false); return; }
+
+  // 出生データが変わった or 未計算なら再計算する
+  const cfgKey = `${cfg.year}-${cfg.month}-${cfg.day}-${cfg.hour}-${cfg.minute}-${cfg.lat}-${cfg.lon}`;
+  if (!mydataRendered || window._natalCacheKey !== cfgKey || !window._natalCache) {
+    window._natalCache    = calcNatalPositions(cfg);
+    window._natalCacheKey = cfgKey;
+    mydataRendered        = true;
+  }
+  const natal = window._natalCache;
+
+  renderProfile(cfg, natal);
+  drawNatalChart(natal);
+  renderPlanetTable(natal);
+  renderHouseTable(natal);
+  renderMoneyType(natal);
+}
+const ROKUYOU = ['大安','赤口','先勝','友引','先負','仏滅'];
+function calcKyureki(year, month, day) {
+  const date = new Date(year, month - 1, day);
+  const knownNewMoon = new Date('2000-01-06T18:14:00Z');
+  const LUNAR = 29.530588853;
+  const diffDays = (date - knownNewMoon) / 86400000;
+  const cyclePos = ((diffDays % LUNAR) + LUNAR) % LUNAR;
+  const totalMonths = Math.floor(diffDays / LUNAR);
+  const kyuMonth = ((totalMonths % 12) + 12) % 12 + 1;
+  const kyuDay   = Math.floor(cyclePos) + 1;
+  return { m: kyuMonth, d: kyuDay };
+}
+function calcRokuyou(year, month, day) {
+  const k = calcKyureki(year, month, day);
+  return ROKUYOU[(k.m + k.d) % 6];
+}
+
+// ── 一粒万倍日 ──────────────────────────────────────────────
+// astronomy-engineで正確に計算したデータ（2026/6/7 生成）
+// 2024〜2028年：完全データ
+// それ以外の年：節月×地支テーブルで近似計算
+
+const ICHIMAN_DATA = {
+  2024: {
+    1:[1,13,16,25,28],2:[7,12,19,24],3:[2,10,15,22,27],
+    4:[3,6,9,18,21,30],5:[3,15,16,27,28],6:[10,11,22,23],
+    7:[4,5,8,17,20,29],8:[1,11,16,23,28],9:[4,12,17,24,29],
+    10:[6,9,12,21,24],11:[2,5,8,11,20,23],12:[2,5,13,14,25,26],
+  },
+  2025: {
+    1:[7,10,19,22,31],2:[3,6,13,18,25],3:[2,10,17,22,29],
+    4:[3,13,16,25,28],5:[10,11,22,23],6:[3,4,6,17,18,29,30],
+    7:[12,15,24,27],8:[5,11,18,23,30],9:[4,12,19,24],
+    10:[1,6,16,19,28,31],11:[15,18,27,30],12:[8,9,20,21],
+  },
+  2026: {
+    1:[1,2,14,17,26,29],2:[8,13,20,25],3:[4,12,17,24,29],
+    4:[8,11,20,23],5:[2,5,6,17,18,29,30],6:[12,13,24,25],
+    7:[6,7,10,19,22,31],8:[3,13,18,25,30],9:[6,14,19,26],
+    10:[1,8,11,14,23,26],11:[4,7,10,13,22,25],12:[4,15,16,27,28],
+  },
+  2027: {
+    1:[9,12,21,24],2:[2,8,15,20,27],3:[4,7,12,19,24,31],
+    4:[6,15,18,27,30],5:[12,13,24,25],6:[5,7,8,19,20],
+    7:[1,2,14,17,26,29],8:[7,8,13,20,25],9:[1,6,9,14,21,26],
+    10:[3,8,9,18,21,30],11:[2,8,17,20,29],12:[2,10,11,22,23],
+  },
+  2028: {
+    1:[3,4,7,16,19,28,31],2:[10,15,22,27],3:[6,13,18,25,30],
+    4:[9,12,21,24],5:[3,6,7,18,19,30,31],6:[13,14,25,26],
+    7:[8,11,20,23],8:[1,4,7,14,19,26,31],9:[8,15,20,27],
+    10:[2,12,15,24,27],11:[5,11,14,23,26],12:[5,16,17,28,29],
+  },
+};
+
+// 節入り日データ（astronomy-engineで生成）
+const SETSU_DATA = {
+  2024:{1:6,2:5,3:5,4:5,5:5,6:5,7:7,8:7,9:7,10:8,11:7,12:7},
+  2025:{1:5,2:4,3:6,4:5,5:5,6:6,7:7,8:7,9:8,10:8,11:7,12:7},
+  2026:{1:6,2:4,3:6,4:5,5:6,6:6,7:7,8:8,9:8,10:9,11:8,12:7},
+  2027:{1:6,2:4,3:6,4:5,5:6,6:6,7:8,8:8,9:8,10:9,11:8,12:8},
+  2028:{1:6,2:5,3:5,4:5,5:5,6:5,7:7,8:7,9:7,10:8,11:7,12:7},
+};
+
+// 2024〜2028年外は節月×地支テーブルで近似
+const ICHIMAN_TABLE_APPROX = {
+  1:[10,1], 2:[11,4], 3:[0,7],  4:[10,1],
+  5:[1,2],  6:[3,4],  7:[4,7],  8:[5,6],
+  9:[1],    10:[4,7], 11:[10,1],12:[10,9],
+};
+
+function dayShiIdx(year, month, day) {
+  const base = new Date(1900, 0, 5); // 寅=0
+  const diff = Math.floor((new Date(year, month-1, day) - base) / 86400000);
+  return ((diff % 12) + 12) % 12;
+}
+
+function calcIchiryuManbaijin(year, month, day) {
+  // 完全データがある年
+  if (ICHIMAN_DATA[year]) {
+    return (ICHIMAN_DATA[year][month] || []).includes(day);
+  }
+  // 近似計算（それ以外の年）
+  const setsu = SETSU_DATA[year] || {1:5,2:4,3:6,4:5,5:6,6:6,7:7,8:7,9:8,10:8,11:7,12:7};
+  const sm  = day >= (setsu[month] || 6) ? month : (month === 1 ? 12 : month - 1);
+  const shi = dayShiIdx(year, month, day);
+  return (ICHIMAN_TABLE_APPROX[sm] || []).includes(shi);
+}
+
+// ── 寅の日・巳の日 ──────────────────────────────────────────
+// 基準日：1900年1月5日（shi=0=寅）
+// 検証済み：JREカレンダーと完全一致 ✅
+function calcToraOrMi(year, month, day) {
+  const shi = dayShiIdx(year, month, day);
+  if (shi === 0) return '寅';
+  if (shi === 3) return '巳';
+  return null;
+}
+
+// ── 不成就日 ─────────────────────────────────────────────────
+function calcFusei(year, month, day) {
+  const base = new Date(1900, 0, 1);
+  const date = new Date(year, month - 1, day);
+  const kanshi = ((Math.floor((date - base) / 86400000) % 60) + 60) % 60;
+  return [5, 6, 11, 20, 29, 36, 38, 46].includes(kanshi);
+}
+
+// ── 天赦日 ───────────────────────────────────────────────────
+function calcTensya(year, month, day) {
+  const base = new Date(1900, 0, 8);
+  const date = new Date(year, month - 1, day);
+  const kanshi = ((Math.floor((date - base) / 86400000) % 60) + 60) % 60;
+  const m = month;
+  if (m >= 2  && m <= 4  && kanshi === 14) return true;
+  if (m >= 5  && m <= 7  && kanshi === 30) return true;
+  if (m >= 8  && m <= 10 && kanshi === 44) return true;
+  if ((m === 11 || m === 12 || m === 1) && kanshi === 0) return true;
+  return false;
+}
+
+// ── 占星術吉日（ネイタル × トランジット 完全版） ─────────────
+const astroGoodDayCache = {};
+
+function calcAstroScore(year, month, day) {
+  const key = `${year}-${month}-${day}`;
+  if (astroGoodDayCache[key] !== undefined) return astroGoodDayCache[key];
+
+  try {
+    if (typeof Astronomy === 'undefined') return { score:0, hits:[] };
+
+    const natal = window._natalCache;
+    if (!natal) return { score:0, hits:[] }; // ネイタル未計算なら skip
+
+    const at  = Astronomy.MakeTime(new Date(year, month - 1, day, 12, 0, 0));
+    const tMoon = getMoonLon(at);
+    const tJup  = getPlanetLon('Jupiter', at);
+    const tVen  = getPlanetLon('Venus',   at);
+    const tPlu  = getPlanetLon('Pluto',   at);
+
+    // ソフトアスペクト + コンジャンクション のみ吉判定
+    const GOOD = ['☌ コンジャンクション','△ トライン','⚹ セクスタイル'];
+    const isGood = (a) => a && GOOD.includes(a.type);
+
+    let score = 0;
+    const hits = [];
+
+    // ── 優先度①：T Jupiter × N Venus ───────────────────────
+    const tj_nv = detectAspect(tJup, natal.venus, 8);
+    if (isGood(tj_nv)) {
+      score += 30;
+      hits.push({ label:`♃木星 ${tj_nv.type} N金星`, rank:'S' });
+    }
+
+    // ── 優先度①：T Venus × N Jupiter ───────────────────────
+    const tv_nj = detectAspect(tVen, natal.jupiter, 8);
+    if (isGood(tv_nj)) {
+      score += 28;
+      hits.push({ label:`♀金星 ${tv_nj.type} N木星`, rank:'S' });
+    }
+
+    // ── 優先度②：T Jupiter × N MC / 10Hルーラー ────────────
+    const tj_nmc = detectAspect(tJup, natal.mc, 8);
+    if (isGood(tj_nmc)) {
+      score += 22;
+      hits.push({ label:`♃木星 ${tj_nmc.type} N MC`, rank:'A' });
+    }
+    const nMCRulerDeg = natal[getRuler(natal.mc)];
+    if (nMCRulerDeg != null) {
+      const tj_nmcr = detectAspect(tJup, nMCRulerDeg, 8);
+      if (isGood(tj_nmcr)) {
+        score += 18;
+        hits.push({ label:`♃木星 ${tj_nmcr.type} N 10Hルーラー`, rank:'A' });
+      }
+    }
+
+    // ── 優先度②：T Jupiter × N 2H/8Hルーラー ───────────────
+    const n2RDeg = natal[natal.house2RulerPlanet];
+    const n8RDeg = natal[natal.house8RulerPlanet];
+    if (n2RDeg != null) {
+      const tj_n2r = detectAspect(tJup, n2RDeg, 8);
+      if (isGood(tj_n2r)) {
+        score += 25;
+        hits.push({ label:`♃木星 ${tj_n2r.type} N 2Hルーラー`, rank:'S' });
+      }
+    }
+    if (n8RDeg != null) {
+      const tj_n8r = detectAspect(tJup, n8RDeg, 8);
+      if (isGood(tj_n8r)) {
+        score += 20;
+        hits.push({ label:`♃木星 ${tj_n8r.type} N 8Hルーラー`, rank:'A' });
+      }
+    }
+
+    // ── T Venus × N MC / ASC ────────────────────────────────
+    const tv_nmc  = detectAspect(tVen, natal.mc,  8);
+    const tv_nasc = detectAspect(tVen, natal.asc, 8);
+    if (isGood(tv_nmc))  { score += 18; hits.push({ label:`♀金星 ${tv_nmc.type} N MC`,  rank:'A' }); }
+    if (isGood(tv_nasc)) { score += 15; hits.push({ label:`♀金星 ${tv_nasc.type} N ASC`, rank:'A' }); }
+
+    // ── T Venus × N 2Hルーラー ──────────────────────────────
+    if (n2RDeg != null) {
+      const tv_n2r = detectAspect(tVen, n2RDeg, 8);
+      if (isGood(tv_n2r)) {
+        score += 20;
+        hits.push({ label:`♀金星 ${tv_n2r.type} N 2Hルーラー`, rank:'A' });
+      }
+    }
+
+    // ── T Moon × N Venus（月次金運） ────────────────────────
+    const tm_nv = detectAspect(tMoon, natal.venus, 8);
+    if (isGood(tm_nv)) {
+      score += 15;
+      hits.push({ label:`☽月 ${tm_nv.type} N金星`, rank:'B', desc:'買い物運・臨時収入の予感' });
+    }
+
+    // ── T Moon × N Jupiter ──────────────────────────────────
+    const tm_nj = detectAspect(tMoon, natal.jupiter, 8);
+    if (isGood(tm_nj)) {
+      score += 14;
+      hits.push({ label:`☽月 ${tm_nj.type} N木星`, rank:'B', desc:'楽観的になって金運チャンスを引き寄せ' });
+    }
+
+    // ── T Moon × N MC / 2Hカスプ ────────────────────────────
+    const tm_nmc  = detectAspect(tMoon, natal.mc, 8);
+    const tm_n2h  = detectAspect(tMoon, natal.houseCusps?.[1] ?? 0, 8);
+    if (isGood(tm_nmc))  { score += 12; hits.push({ label:`☽月 ${tm_nmc.type} N MC`,     rank:'B', desc:'仕事・収入に関わる直感が冴える' }); }
+    if (isGood(tm_n2h))  { score += 12; hits.push({ label:`☽月 ${tm_n2h.type} N 2Hカスプ`, rank:'B', desc:'お金の感覚が鋭くなる日' }); }
+
+    // ── T Moon × N POF（ギレンの法則）──────────────────────
+    const tm_npof = detectAspect(tMoon, natal.pof, 5);
+    if (isGood(tm_npof)) {
+      score += 18;
+      hits.push({ label:`☽月 ${tm_npof.type} N POF`, rank:'S', desc:'超ラッキーな1日になりやすい' });
+    }
+
+    // ── T Moon × N MC（ギレンの法則・±30度）────────────────
+    const moonToMC = getOrb(tMoon, natal.mc);
+    if (moonToMC <= 30) {
+      score += 10;
+      hits.push({ label:`☽月がN MCに${moonToMC.toFixed(1)}° (±30°)`, rank:'B' });
+    }
+
+    // ── T Pluto × N Venus / Jupiter（ソフトのみ）────────────
+    const tp_nv = detectAspect(tPlu, natal.venus, 5);
+    const tp_nj = detectAspect(tPlu, natal.jupiter, 5);
+    if (tp_nv && ['△ トライン','⚹ セクスタイル'].includes(tp_nv.type)) {
+      score += 12; hits.push({ label:`♇冥王星 ${tp_nv.type} N金星`, rank:'A', desc:'大きな変革的金運（投資成功など）' });
+    }
+    if (tp_nj && ['△ トライン','⚹ セクスタイル'].includes(tp_nj.type)) {
+      score += 10; hits.push({ label:`♇冥王星 ${tp_nj.type} N木星`, rank:'A' });
+    }
+
+    // ── ボーナス：T Jupiter が 2H / 8H / 11H 通過中 ─────────
+    if (natal.houseCusps) {
+      const jupIn2H  = isInHouse(tJup, 1,  natal.houseCusps);
+      const jupIn8H  = isInHouse(tJup, 7,  natal.houseCusps);
+      const jupIn11H = isInHouse(tJup, 10, natal.houseCusps);
+      if (jupIn2H)  { score += 15; hits.push({ label:'♃木星 2H滞在中',  rank:'A', desc:'金運のベース底上げ期間' }); }
+      if (jupIn8H)  { score += 12; hits.push({ label:'♃木星 8H滞在中',  rank:'A', desc:'臨時収入・投資運上昇' }); }
+      if (jupIn11H) { score += 10; hits.push({ label:'♃木星 11H滞在中', rank:'B', desc:'利益回収・人脈からの収入' }); }
+
+      // T Venus が 2H 通過中
+      const venIn2H = isInHouse(tVen, 1, natal.houseCusps);
+      if (venIn2H)  { score += 10; hits.push({ label:'♀金星 2H通過中', rank:'B', desc:'日常的な金運アップ' }); }
+    }
+
+    const result = { score: Math.min(score, 100), hits };
+    astroGoodDayCache[key] = result;
+    return result;
+
+  } catch(e) {
+    return { score:0, hits:[] };
+  }
+}
+
+// 後方互換ラッパー（getDayInfo から呼ばれる）
+function isAstroGoodDay(year, month, day) {
+  return calcAstroScore(year, month, day).score >= 15;
+}
+
+// ── 日付の全属性を取得 ──────────────────────────────────────
+function getDayInfo(year, month, day) {
+  const rokuyou = calcRokuyou(year, month, day);
+  const ichiman = calcIchiryuManbaijin(year, month, day);
+  const tora    = calcToraOrMi(year, month, day);
+  const fusei   = calcFusei(year, month, day);
+  const tensya  = calcTensya(year, month, day);
+  const astroResult = calcAstroScore(year, month, day);
+  const astroScore  = astroResult.score;
+  const astroHits   = astroResult.hits;
+
+  // 占星術ランク判定
+  const topRank = astroHits.find(h => h.rank === 'S') ? 'S'
+                : astroHits.find(h => h.rank === 'A') ? 'A'
+                : astroHits.length > 0 ? 'B' : null;
+
+  const tags = [];
+  if (tensya)            tags.push({ label:'天赦日 ✦', cls:'tensya' });
+  if (ichiman && !fusei) tags.push({ label:'一粒万倍日', cls:'ichiryuu' });
+  if (topRank === 'S')      tags.push({ label:'🌟 個人金運最強', cls:'astro' });
+  else if (topRank === 'A') tags.push({ label:'💫 占星術吉日',   cls:'astro' });
+  else if (topRank === 'B') tags.push({ label:'🌙 月次金運良好', cls:'astro' });
+  if (tora === '寅')     tags.push({ label:'🐅 寅の日', cls:'tora' });
+  if (tora === '巳')     tags.push({ label:'🐍 巳の日', cls:'tora' });
+  if (fusei)             tags.push({ label:'不成就日',  cls:'fusei' });
+
+  let luckyScore = 0;
+  if (tensya)            luckyScore += 40;
+  if (ichiman && !fusei) luckyScore += 25;
+  luckyScore += Math.round(astroScore * 0.4); // 占星術スコアを加算
+  if (tora)              luckyScore += 10;
+  if (fusei)             luckyScore -= 30;
+
+  const descs = [];
+  if (tensya)  descs.push('✦ <strong style="color:#7ee8b0">天赦日</strong>：年に数回の最強吉日。新しいことのスタートに最適。');
+  if (ichiman && !fusei) descs.push('💰 <strong style="color:#F0D9A8">一粒万倍日</strong>：財布の新調・貯金開始・種まきに◎');
+
+  // 占星術ヒットを解説文に展開
+  if (astroHits.length > 0) {
+    const topHit = astroHits[0];
+    descs.push(`🌟 <strong style="color:#d4bbff">${topHit.label}</strong>${topHit.desc ? '：' + topHit.desc : ''}`);
+    if (astroHits.length > 1) {
+      const extras = astroHits.slice(1, 3).map(h => `・${h.label}`).join('');
+      descs.push(`<span style="color:rgba(200,180,255,0.6);font-size:11px;">${extras}${astroHits.length > 3 ? ` 他${astroHits.length-3}件` : ''}</span>`);
+    }
+  }
+
+  if (tora === '寅') descs.push('🐅 <strong style="color:#E8C4B8">寅の日</strong>：お金が戻ってくる縁起の日。');
+  if (tora === '巳') descs.push('🐍 <strong style="color:#E8C4B8">巳の日</strong>：弁財天の使い。財運・縁結びに吉。');
+  if (fusei)         descs.push('🚫 <strong style="color:#aaa">不成就日</strong>：大きな決断・新規スタートは避けて。');
+  if (!descs.length) descs.push('今日は静かな一日。日常を丁寧に過ごすのに◎');
+
+  return { rokuyou, tags, luckyScore, descs, tora, fusei, tensya, ichiman,
+           astro: astroHits.length > 0, astroScore, astroHits, topRank };
+}
+
+// ── カレンダー描画 ──────────────────────────────────────────
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth() + 1;
+let selectedDay = null;
+
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 12) { calMonth = 1;  calYear++; }
+  if (calMonth < 1)  { calMonth = 12; calYear--; }
+  selectedDay = null;
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const grid       = document.getElementById('calGrid');
+  const titleEl    = document.getElementById('calMonthTitle');
+  const labelEl    = document.getElementById('calMonthLabel');
+  const detailCard = document.getElementById('calDetailCard');
+  if (!grid) return;
+
+  const title = `${calYear}年${calMonth}月`;
+  if (titleEl) titleEl.textContent = title;
+  if (labelEl) labelEl.textContent = title;
+  if (detailCard) detailCard.style.display = 'none';
+
+  const today    = new Date();
+  const firstDay = new Date(calYear, calMonth - 1, 1).getDay();
+  const lastDate = new Date(calYear, calMonth, 0).getDate();
+  const prevLast = new Date(calYear, calMonth - 1, 0).getDate();
+
+  grid.innerHTML = '';
+
+  for (let i = 0; i < firstDay; i++) {
+    const d  = prevLast - firstDay + 1 + i;
+    const pm = calMonth === 1 ? 12 : calMonth - 1;
+    const py = calMonth === 1 ? calYear - 1 : calYear;
+    grid.appendChild(makeCellEl(py, pm, d, true));
+  }
+  for (let d = 1; d <= lastDate; d++) {
+    const isToday = calYear === today.getFullYear() &&
+                    calMonth === today.getMonth() + 1 &&
+                    d === today.getDate();
+    grid.appendChild(makeCellEl(calYear, calMonth, d, false, isToday));
+  }
+  const remain = (7 - ((firstDay + lastDate) % 7)) % 7;
+  const nm = calMonth === 12 ? 1 : calMonth + 1;
+  const ny = calMonth === 12 ? calYear + 1 : calYear;
+  for (let i = 1; i <= remain; i++) grid.appendChild(makeCellEl(ny, nm, i, true));
+
+  renderLuckyList();
+}
+
+function makeCellEl(year, month, day, otherMonth, isToday) {
+  const info = getDayInfo(year, month, day);
+  const dow  = new Date(year, month - 1, day).getDay();
+  const isSel = selectedDay &&
+    selectedDay.y === year && selectedDay.m === month && selectedDay.d === day;
+
+  const cell = document.createElement('div');
+  cell.className = ['cal-cell',
+    otherMonth  ? 'other-month' : '',
+    isToday     ? 'today'       : '',
+    dow === 0   ? 'sunday'      : '',
+    dow === 6   ? 'saturday'    : '',
+    (info.fusei && !otherMonth) ? 'fusei' : '',
+    isSel       ? 'selected'    : '',
+  ].filter(Boolean).join(' ');
+
+  const numEl = document.createElement('div');
+  numEl.className = 'cal-day-num';
+  numEl.textContent = day;
+  cell.appendChild(numEl);
+
+  const ryEl = document.createElement('div');
+  ryEl.className = 'cal-rokuyou';
+  ryEl.textContent = info.rokuyou;
+  cell.appendChild(ryEl);
+
+  if (!otherMonth && info.tags.length > 0) {
+    // タグ→絵文字のマッピング
+    const emojiMap = {
+      tensya:   '✨',
+      ichiryuu: '💰',
+      astro:    info.topRank === 'S' ? '🌟' : info.topRank === 'A' ? '💫' : '🌙',
+      tora:     info.tora === '寅' ? '🐅' : '🐍',
+      fusei:    '🚫',
+    };
+    const iconsEl = document.createElement('div');
+    iconsEl.style.cssText = 'display:flex;gap:1px;justify-content:center;flex-wrap:wrap;max-width:36px;margin-top:1px;';
+    info.tags.slice(0, 3).forEach(t => {
+      const icon = document.createElement('span');
+      icon.style.cssText = 'font-size:8px;line-height:1;';
+      icon.textContent = emojiMap[t.cls] || '✦';
+      iconsEl.appendChild(icon);
+    });
+    cell.appendChild(iconsEl);
+  }
+
+  if (!otherMonth) cell.onclick = () => selectDay(year, month, day);
+  return cell;
+}
+
+function selectDay(year, month, day) {
+  selectedDay = { y: year, m: month, d: day };
+  renderCalendar();
+
+  const info = getDayInfo(year, month, day);
+  const dows = ['日','月','火','水','木','金','土'];
+  const dow  = dows[new Date(year, month - 1, day).getDay()];
+
+  document.getElementById('calDetailDate').textContent =
+    `${year}年${month}月${day}日（${dow}）${info.rokuyou}`;
+  document.getElementById('calDetailTags').innerHTML =
+    info.tags.map(t => `<span class="cal-tag ${t.cls}">${t.label}</span>`).join('');
+  document.getElementById('calDetailBody').innerHTML =
+    info.descs.join('<br><br>');
+
+  const card = document.getElementById('calDetailCard');
+  card.style.display = 'block';
+  setTimeout(() => card.scrollIntoView({ behavior:'smooth', block:'nearest' }), 50);
+}
+
+function renderLuckyList() {
+  const listEl   = document.getElementById('luckyDaysList');
+  if (!listEl) return;
+  const lastDate = new Date(calYear, calMonth, 0).getDate();
+  const dows     = ['日','月','火','水','木','金','土'];
+  const lucky    = [];
+  for (let d = 1; d <= lastDate; d++) {
+    const info = getDayInfo(calYear, calMonth, d);
+    if (info.luckyScore >= 25 || info.tensya) {
+      lucky.push({ d, info, dow: dows[new Date(calYear, calMonth-1, d).getDay()] });
+    }
+  }
+  if (!lucky.length) {
+    listEl.innerHTML = '<div style="font-size:12px;color:rgba(255,255,255,0.3);padding:12px 0;">今月は目立った吉日はありません</div>';
+    return;
+  }
+  const colorMap = { ichiryuu:'#F0D9A8', astro:'#d4bbff', tora:'#E8C4B8', tensya:'#7ee8b0' };
+  listEl.innerHTML = lucky.map(({ d, info, dow }) => {
+    const topTag   = info.tags.find(t => t.cls !== 'fusei');
+    const tagColor = topTag ? (colorMap[topTag.cls] || '#fff') : '#fff';
+    return `<div class="lucky-item" onclick="selectDay(${calYear},${calMonth},${d})">
+      <div class="lucky-item-date">${calMonth}/${d}（${dow}）</div>
+      <div class="lucky-item-body">
+        <div class="lucky-item-title" style="color:${tagColor};">
+          ${info.tags.map(t=>t.label).join(' ✦ ')}
+        </div>
+        <div class="lucky-item-sub">${info.rokuyou} ／ ${
+          info.tensya       ? '最強吉日！大きな行動・新規スタートに◎' :
+          info.luckyScore >= 45 ? '超吉日！迷わず動いて' :
+          info.luckyScore >= 30 ? '金運・財運アップの日' : '運気が高まる一日'
+        }</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================
+function entryPoint() {
+  // 日付表示を今日の日付に更新
+  const today = new Date();
+  const days  = ['日','月','火','水','木','金','土'];
+  const dateEl = document.getElementById('todayDate');
+  if (dateEl) dateEl.textContent =
+    `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日 ${days[today.getDay()]}曜`;
+
+  initPrefSelect(); // 都道府県セレクトを生成
+
+  const cfg = loadBirthConfig();
+  if (cfg) {
+    // 既存ユーザー → メイン画面へ
+    document.getElementById('editProfileBtn').style.display = 'flex';
+    startApp(cfg);
+  } else {
+    // 新規ユーザー → 入力画面へ（ローディングは隠す）
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.style.display = 'none';
+    showOnboarding(false);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', entryPoint);
+} else {
+  entryPoint();
+}
+</script>
+</body>
+</html>
