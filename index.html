@@ -1997,19 +1997,22 @@ function calcNatalPositions(cfg) {
     asc:     ascLon,
     pof:     pofLon,
     houseCusps: cusps,
-    // ── ハウスルーラーを RULER_MAP で自動判定 ──────────────
-    house2RulerPlanet: getRuler(cusps[1]), // 2H カスプの星座からルーラーを取得
-    house5RulerPlanet: getRuler(cusps[4]), // 5H カスプ（勝負・投機）
-    house8RulerPlanet: getRuler(cusps[7]), // 8H カスプ（臨時収入・他者資本）
+    // ── ハウスルーラー（近代主ルーラー + 伝統副ルーラーの両方）──────
+    house2RulerPlanet:  getRuler(cusps[1]),          // 後方互換用（主ルーラー）
+    house5RulerPlanet:  getRuler(cusps[4]),
+    house8RulerPlanet:  getRuler(cusps[7]),
+    house2Rulers:       getRulers(cusps[1]),          // 複数ルーラー（新）
+    house5Rulers:       getRulers(cusps[4]),
+    house8Rulers:       getRulers(cusps[7]),
   };
 
   // スマホ対応：console.log のみ使用
   const log = (typeof console !== 'undefined' && typeof console.log === 'function')
     ? console.log.bind(console) : function(){};
-  log('🏠 ハウスルーラー自動判定');
-  log('  2H: ' + getSign(cusps[1]) + ' → ' + result.house2RulerPlanet);
-  log('  5H: ' + getSign(cusps[4]) + ' → ' + result.house5RulerPlanet);
-  log('  8H: ' + getSign(cusps[7]) + ' → ' + result.house8RulerPlanet);
+  log('🏠 ハウスルーラー自動判定（近代＋伝統）');
+  log('  2H: ' + getSign(cusps[1]) + ' → 主: ' + result.house2Rulers[0] + (result.house2Rulers[1] ? ' / 副: ' + result.house2Rulers[1] : ''));
+  log('  5H: ' + getSign(cusps[4]) + ' → 主: ' + result.house5Rulers[0] + (result.house5Rulers[1] ? ' / 副: ' + result.house5Rulers[1] : ''));
+  log('  8H: ' + getSign(cusps[7]) + ' → 主: ' + result.house8Rulers[0] + (result.house8Rulers[1] ? ' / 副: ' + result.house8Rulers[1] : ''));
 
   // F12 開発者ツールで確認できます
   debugPlanetPositions(`ネイタル（${year}/${month}/${day} ${hour}:${String(minute).padStart(2,'0')} UTC+${tzOffsetHours}）`, result);
@@ -2071,10 +2074,13 @@ function getSign(deg) {
 }
 
 // ============================================================
-// ── 星座 → ルーラー惑星の対応表（伝統的7天体）
-//    使い方: RULER_MAP[getSign(cusps[1])] → '金星'
+// ── 星座 → ルーラー惑星の対応表
+//    主ルーラー（近代）＋ 副ルーラー（伝統）の両方を保持
+//    蠍座: 冥王星（主）/ 火星（副）
+//    水瓶座: 天王星（主）/ 土星（副）
+//    魚座: 海王星（主）/ 木星（副）
 // ============================================================
-const RULER_MAP = {
+const RULER_MAP_MODERN = {
   '牡羊座': 'mars',
   '牡牛座': 'venus',
   '双子座': 'mercury',
@@ -2082,16 +2088,47 @@ const RULER_MAP = {
   '獅子座': 'sun',
   '乙女座': 'mercury',
   '天秤座': 'venus',
-  '蠍座':   'mars',    // 伝統的ルーラー（近代: pluto）
+  '蠍座':   'pluto',    // 近代ルーラー
   '射手座': 'jupiter',
   '山羊座': 'saturn',
-  '水瓶座': 'saturn',  // 伝統的ルーラー（近代: uranus）
-  '魚座':   'jupiter', // 伝統的ルーラー（近代: neptune）
+  '水瓶座': 'uranus',   // 近代ルーラー
+  '魚座':   'neptune',  // 近代ルーラー
 };
 
-/** 黄経からルーラー惑星名を返す */
+const RULER_MAP_TRAD = {
+  '牡羊座': 'mars',
+  '牡牛座': 'venus',
+  '双子座': 'mercury',
+  '蟹座':   'moon',
+  '獅子座': 'sun',
+  '乙女座': 'mercury',
+  '天秤座': 'venus',
+  '蠍座':   'mars',     // 伝統的ルーラー
+  '射手座': 'jupiter',
+  '山羊座': 'saturn',
+  '水瓶座': 'saturn',   // 伝統的ルーラー
+  '魚座':   'jupiter',  // 伝統的ルーラー
+};
+
+/**
+ * 黄経からルーラー惑星名を返す（近代ルーラー優先）
+ * 単一の惑星名が必要な場合はこちら
+ */
 function getRuler(deg) {
-  return RULER_MAP[getSign(deg)] || 'sun';
+  return RULER_MAP_MODERN[getSign(deg)] || 'sun';
+}
+
+/**
+ * 黄経から主ルーラー（近代）と副ルーラー（伝統）を両方返す
+ * 蠍座・水瓶座・魚座では2つの惑星名を返す
+ * 使い方: getRulers(cusps[1]) → ['pluto', 'mars'] または ['venus']
+ */
+function getRulers(deg) {
+  const sign   = getSign(deg);
+  const modern = RULER_MAP_MODERN[sign];
+  const trad   = RULER_MAP_TRAD[sign];
+  if (modern === trad) return [modern];          // 同じなら1つだけ
+  return [modern, trad].filter(Boolean);         // 2つ返す
 }
 
 function detectAspect(deg1, deg2, orbLimit = 8) {
@@ -2146,33 +2183,58 @@ function checkGuillenLaw(transit, natal) {
 function calcMoneyScore(transit, natal) {
   let score = 0;
   const reasons = [], warnings = [];
-  const h2RDeg = natal[natal.house2RulerPlanet];
 
-  const jupTo2H = detectAspect(transit.jupiter, h2RDeg, 8);
-  const venTo2H = detectAspect(transit.venus,   h2RDeg, 8);
-  if (jupTo2H) { score += 25; reasons.push(`♃木星が2Hルーラーに${jupTo2H.type}`); }
-  if (venTo2H) { score += 20; reasons.push(`♀金星が2Hルーラーに${venTo2H.type}`); }
+  // 2Hルーラー（主＋副の両方チェック）
+  const h2Rulers = natal.house2Rulers || [natal.house2RulerPlanet];
+  const h8Rulers = natal.house8Rulers || [natal.house8RulerPlanet];
 
-  const h8RDeg  = natal[natal.house8RulerPlanet];
-  const jupTo8H = detectAspect(transit.jupiter, h8RDeg, 8);
-  if (jupTo8H) { score += 15; reasons.push(`♃木星が8Hルーラーに${jupTo8H.type}（臨時収入）`); }
+  // 【優先度①】2Hルーラーへのトランジット木星・金星アスペクト
+  for (const ruler of h2Rulers) {
+    const rulerDeg = natal[ruler];
+    if (rulerDeg == null) continue;
+    const jupTo2H = detectAspect(transit.jupiter, rulerDeg, 8);
+    const venTo2H = detectAspect(transit.venus,   rulerDeg, 8);
+    if (jupTo2H) { score += 25; reasons.push(`♃木星が2Hルーラー(${ruler})に${jupTo2H.type}`); }
+    if (venTo2H) { score += 20; reasons.push(`♀金星が2Hルーラー(${ruler})に${venTo2H.type}`); }
+  }
 
+  // 【優先度②】8Hルーラーへのトランジット木星アスペクト
+  for (const ruler of h8Rulers) {
+    const rulerDeg = natal[ruler];
+    if (rulerDeg == null) continue;
+    const jupTo8H = detectAspect(transit.jupiter, rulerDeg, 8);
+    if (jupTo8H) { score += 15; reasons.push(`♃木星が8Hルーラー(${ruler})に${jupTo8H.type}（臨時収入）`); }
+  }
+
+  // 【優先度③】木星の2H・8H入室
   if (isInHouse(transit.jupiter, 1, natal.houseCusps)) { score += 20; reasons.push(`♃木星が2ハウス滞在中`); }
   if (isInHouse(transit.jupiter, 7, natal.houseCusps)) { score += 15; reasons.push(`♃木星が8ハウス滞在中`); }
   if (isInHouse(transit.moon,    1, natal.houseCusps)) { score += 10; reasons.push(`☽月が2ハウス通過中`); }
   if (isInHouse(transit.moon,    7, natal.houseCusps)) { score += 8;  reasons.push(`☽月が8ハウス通過中`); }
 
+  // 【POF・金星ボーナス】
   const venToPOF = detectAspect(transit.venus, natal.pof, 5);
   if (venToPOF) { score += 10; reasons.push(`♀金星がPOFに${venToPOF.type}`); }
 
+  // 【ギレンの法則】
   const guillen = checkGuillenLaw(transit, natal);
   if (guillen.triggered) { score += 15; reasons.push(...guillen.detail); }
 
-  const satTo2H = detectAspect(transit.saturn, h2RDeg, 8);
-  if (satTo2H) { score -= 10; reasons.push(`♄土星が2Hルーラーに${satTo2H.type}（計画投資・財布整理の日）`); }
+  // 【土星：抑制＋ポジティブ解説】
+  for (const ruler of h2Rulers) {
+    const rulerDeg = natal[ruler];
+    if (rulerDeg == null) continue;
+    const satTo2H = detectAspect(transit.saturn, rulerDeg, 8);
+    if (satTo2H) { score -= 10; reasons.push(`♄土星が2Hルーラー(${ruler})に${satTo2H.type}（計画投資・財布整理◎）`); }
+  }
 
-  const nepTo2H = detectAspect(transit.neptune, h2RDeg, 5);
-  if (nepTo2H) { score -= 5; warnings.push('⚠️ 海王星が絡む日：予算を決めて楽しんで'); }
+  // 【海王星：警告】
+  for (const ruler of h2Rulers) {
+    const rulerDeg = natal[ruler];
+    if (rulerDeg == null) continue;
+    const nepTo2H = detectAspect(transit.neptune, rulerDeg, 5);
+    if (nepTo2H) { score -= 5; warnings.push('⚠️ 海王星が絡む日：予算を決めて楽しんで'); }
+  }
 
   return { score: Math.max(0, Math.min(100, score)), stars: scoreToStars(score), reasons, warnings };
 }
@@ -2184,14 +2246,32 @@ function calcMoneyScore(transit, natal) {
 function calcBattleScore(transit, natal) {
   let score = 0;
   const reasons = [], warnings = [];
-  const h5RDeg = natal[natal.house5RulerPlanet]; // 5Hルーラー（勝負・投機・遊び）
-  const h8RDeg = natal[natal.house8RulerPlanet]; // 8Hルーラー（臨時収入・他者資本）
 
-  const jupTo5H  = detectAspect(transit.jupiter, h5RDeg, 8);
-  const jupTo8HR = detectAspect(transit.jupiter, h8RDeg, 8);
-  if (jupTo5H)  { score += 20; reasons.push(`♃木星が5Hルーラーに${jupTo5H.type}`); }
-  if (jupTo8HR) { score += 15; reasons.push(`♃木星が8Hルーラーに${jupTo8HR.type}`); }
+  const h5Rulers = natal.house5Rulers || [natal.house5RulerPlanet];
+  const h8Rulers = natal.house8Rulers || [natal.house8RulerPlanet];
 
+  // 木星が5H・8Hルーラーにアスペクト
+  for (const ruler of h5Rulers) {
+    const rulerDeg = natal[ruler];
+    if (rulerDeg == null) continue;
+    const jupTo5H = detectAspect(transit.jupiter, rulerDeg, 8);
+    if (jupTo5H) { score += 20; reasons.push(`♃木星が5Hルーラー(${ruler})に${jupTo5H.type}`); }
+    // 土星の抑制
+    const satTo5H = detectAspect(transit.saturn, rulerDeg, 8);
+    if (satTo5H) { score -= 15; reasons.push(`♄土星が5Hルーラー(${ruler})に${satTo5H.type}（ギャンブルより計画投資◎）`); }
+    // 海王星の警告
+    const nep5H = detectAspect(transit.neptune, rulerDeg, 5);
+    if (nep5H) { score -= 8; warnings.push('⚠️ 海王星が絡む日：予算を決めて楽しんで'); }
+  }
+
+  for (const ruler of h8Rulers) {
+    const rulerDeg = natal[ruler];
+    if (rulerDeg == null) continue;
+    const jupTo8HR = detectAspect(transit.jupiter, rulerDeg, 8);
+    if (jupTo8HR) { score += 15; reasons.push(`♃木星が8Hルーラー(${ruler})に${jupTo8HR.type}`); }
+  }
+
+  // 天王星（突発利益・損失）
   const urAsp = detectAspect(transit.uranus, natal.mars, 5);
   if (urAsp) {
     score += 15;
@@ -2199,20 +2279,20 @@ function calcBattleScore(transit, natal) {
     reasons.push(`⛢天王星が火星に${urAsp.type}（予測不能の展開）`);
   }
 
+  // 火星（勝負勘）
   const marToJup = detectAspect(transit.mars, natal.jupiter, 6);
   if (marToJup) { score += 12; reasons.push(`♂火星が木星に${marToJup.type}（勝負勘↑）`); }
 
-  const pluTo5H = detectAspect(transit.pluto, h5RDeg, 4);
-  if (pluTo5H)  { score += 10; reasons.push(`♇冥王星が5Hルーラーに${pluTo5H.type}（一発逆転）`); }
+  // 冥王星（一発逆転）
+  for (const ruler of h5Rulers) {
+    const rulerDeg = natal[ruler];
+    if (rulerDeg == null) continue;
+    const pluTo5H = detectAspect(transit.pluto, rulerDeg, 4);
+    if (pluTo5H) { score += 10; reasons.push(`♇冥王星が5Hルーラー(${ruler})に${pluTo5H.type}（一発逆転）`); }
+  }
 
   const guillen = checkGuillenLaw(transit, natal);
   if (guillen.triggered) { score += 10; }
-
-  const satTo5H = detectAspect(transit.saturn, h5RDeg, 8);
-  if (satTo5H) { score -= 15; reasons.push(`♄土星が5Hルーラーに${satTo5H.type}（ギャンブルより計画投資◎）`); }
-
-  const nep5H = detectAspect(transit.neptune, h5RDeg, 5);
-  if (nep5H) { score -= 8; warnings.push('⚠️ 海王星が絡む日：予算を決めて楽しんで'); }
 
   return { score: Math.max(0, Math.min(100, score)), stars: scoreToStars(score), reasons, warnings };
 }
@@ -3702,23 +3782,39 @@ function renderPlanetTable(natal) {
   const el = document.getElementById('mdPlanetTable');
   if (!el) return;
 
+  // 主ルーラー＋副ルーラー全部をまとめてSetに
   const moneyPlanets = new Set([
-    natal.house2RulerPlanet,
-    natal.house5RulerPlanet,
-    natal.house8RulerPlanet,
+    ...(natal.house2Rulers || [natal.house2RulerPlanet]),
+    ...(natal.house5Rulers || [natal.house5RulerPlanet]),
+    ...(natal.house8Rulers || [natal.house8RulerPlanet]),
   ]);
+
+  // どのハウスの何ルーラーかを表示するためのラベルマップ
+  const rulerLabels = {};
+  const addLabel = (rulers, houseLabel) => {
+    (rulers || []).forEach((r, i) => {
+      if (!rulerLabels[r]) rulerLabels[r] = [];
+      rulerLabels[r].push(houseLabel + (i === 0 ? '主' : '副'));
+    });
+  };
+  addLabel(natal.house2Rulers, '2H');
+  addLabel(natal.house5Rulers, '5H');
+  addLabel(natal.house8Rulers, '8H');
 
   el.innerHTML = PLANET_CONFIG.map(p => {
     if (natal[p.key] == null) return '';
-    const lon     = natal[p.key];
-    const sign    = getSign(lon);
-    const deg     = (lon % 30).toFixed(1);
-    const isMoney = moneyPlanets.has(p.key);
+    const lon  = natal[p.key];
+    const sign = getSign(lon);
+    const deg  = (lon % 30).toFixed(1);
+    const labels = rulerLabels[p.key];
+    const badge = labels
+      ? labels.map(l => `<span class="md-table-badge">${l}</span>`).join('')
+      : '';
     return `<div class="md-table-row">
       <div class="md-table-sym"  style="color:${p.color}">${p.sym}</div>
       <div class="md-table-name" style="color:rgba(255,255,255,0.45)">${p.name}</div>
       <div class="md-table-sign">${sign} ${deg}°</div>
-      ${isMoney ? `<span class="md-table-badge">金運</span>` : ''}
+      ${badge}
       <div class="md-table-deg" style="color:rgba(255,255,255,0.25);margin-left:auto">${p.meaning}</div>
     </div>`;
   }).join('');
@@ -3733,15 +3829,26 @@ function renderHouseTable(natal) {
     '恋愛・投機','健康・仕事','パートナー','遺産・他者資本',
     '哲学・海外','社会的地位','友人・利益','秘密・潜在'
   ];
+
+  // 各ハウスのルーラーを「主/副」形式で表示
+  function houseRulerLabel(houseIndex) {
+    const cusp = natal.houseCusps[houseIndex];
+    const rulers = getRulers(cusp);
+    if (rulers.length === 1) return rulers[0];
+    return rulers[0] + ' / ' + rulers[1]; // 例: pluto / mars
+  }
+
   el.innerHTML = natal.houseCusps.map((cusp, i) => {
-    const isKey = [1,4,7].includes(i); // 2H・5H・8H を強調
+    const isKey = [1,4,7].includes(i);
     return `<div class="md-table-row">
       <div class="md-table-sym" style="color:rgba(255,255,255,0.3);font-size:11px;">${i+1}H</div>
       <div class="md-table-name" style="color:rgba(255,255,255,0.35);font-size:10px;">${houseNames[i]}</div>
       <div class="md-table-sign" style="${isKey?'color:var(--gold-light);':''}">
         ${getSign(cusp)} ${(cusp % 30).toFixed(1)}°
       </div>
-      <div class="md-table-deg" style="color:rgba(255,255,255,0.2);">${getRuler(cusp)}</div>
+      <div class="md-table-deg" style="color:rgba(255,255,255,${isKey?'0.5':'0.2'});">
+        ${houseRulerLabel(i)}
+      </div>
     </div>`;
   }).join('');
 }
@@ -3962,30 +4069,40 @@ function calcAstroScore(year, month, day) {
       score += 22;
       hits.push({ label:`♃木星 ${tj_nmc.type} N MC`, rank:'A' });
     }
-    const nMCRulerDeg = natal[getRuler(natal.mc)];
-    if (nMCRulerDeg != null) {
-      const tj_nmcr = detectAspect(tJup, nMCRulerDeg, 8);
+    // 10Hルーラー（主＋副）
+    for (const ruler of getRulers(natal.houseCusps?.[9] ?? natal.mc)) {
+      const deg = natal[ruler];
+      if (deg == null) continue;
+      const tj_nmcr = detectAspect(tJup, deg, 8);
       if (isGood(tj_nmcr)) {
         score += 18;
-        hits.push({ label:`♃木星 ${tj_nmcr.type} N 10Hルーラー`, rank:'A' });
+        hits.push({ label:`♃木星 ${tj_nmcr.type} N 10Hルーラー(${ruler})`, rank:'A' });
+        break; // 同じハウスで重複加算しない
       }
     }
 
-    // ── 優先度②：T Jupiter × N 2H/8Hルーラー ───────────────
-    const n2RDeg = natal[natal.house2RulerPlanet];
-    const n8RDeg = natal[natal.house8RulerPlanet];
-    if (n2RDeg != null) {
-      const tj_n2r = detectAspect(tJup, n2RDeg, 8);
+    // ── 優先度②：T Jupiter × N 2H/8Hルーラー（主＋副）────────
+    const h2Rulers = natal.house2Rulers || [natal.house2RulerPlanet];
+    const h8Rulers = natal.house8Rulers || [natal.house8RulerPlanet];
+
+    for (const ruler of h2Rulers) {
+      const deg = natal[ruler];
+      if (deg == null) continue;
+      const tj_n2r = detectAspect(tJup, deg, 8);
       if (isGood(tj_n2r)) {
         score += 25;
-        hits.push({ label:`♃木星 ${tj_n2r.type} N 2Hルーラー`, rank:'S' });
+        hits.push({ label:`♃木星 ${tj_n2r.type} N 2Hルーラー(${ruler})`, rank:'S' });
+        break;
       }
     }
-    if (n8RDeg != null) {
-      const tj_n8r = detectAspect(tJup, n8RDeg, 8);
+    for (const ruler of h8Rulers) {
+      const deg = natal[ruler];
+      if (deg == null) continue;
+      const tj_n8r = detectAspect(tJup, deg, 8);
       if (isGood(tj_n8r)) {
         score += 20;
-        hits.push({ label:`♃木星 ${tj_n8r.type} N 8Hルーラー`, rank:'A' });
+        hits.push({ label:`♃木星 ${tj_n8r.type} N 8Hルーラー(${ruler})`, rank:'A' });
+        break;
       }
     }
 
@@ -3995,12 +4112,15 @@ function calcAstroScore(year, month, day) {
     if (isGood(tv_nmc))  { score += 18; hits.push({ label:`♀金星 ${tv_nmc.type} N MC`,  rank:'A' }); }
     if (isGood(tv_nasc)) { score += 15; hits.push({ label:`♀金星 ${tv_nasc.type} N ASC`, rank:'A' }); }
 
-    // ── T Venus × N 2Hルーラー ──────────────────────────────
-    if (n2RDeg != null) {
-      const tv_n2r = detectAspect(tVen, n2RDeg, 8);
+    // ── T Venus × N 2Hルーラー（主＋副）────────────────────
+    for (const ruler of h2Rulers) {
+      const deg = natal[ruler];
+      if (deg == null) continue;
+      const tv_n2r = detectAspect(tVen, deg, 8);
       if (isGood(tv_n2r)) {
         score += 20;
-        hits.push({ label:`♀金星 ${tv_n2r.type} N 2Hルーラー`, rank:'A' });
+        hits.push({ label:`♀金星 ${tv_n2r.type} N 2Hルーラー(${ruler})`, rank:'A' });
+        break;
       }
     }
 
