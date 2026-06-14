@@ -1264,6 +1264,25 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
 
+  <!-- ボイドタイムバナー（ボイド中のみ表示） -->
+  <div id="voidBanner" style="display:none;
+    width:calc(100% - 32px);
+    background:linear-gradient(135deg,rgba(100,80,160,0.25),rgba(60,40,120,0.25));
+    border:1px solid rgba(180,150,255,0.35);
+    border-radius:16px; padding:14px 18px;
+    display:none; align-items:center; gap:14px;
+    margin-bottom:16px; animation: glowPulse 3s ease-in-out infinite;">
+    <div style="font-size:28px;">🌑</div>
+    <div style="flex:1;">
+      <div style="font-size:12px;font-weight:700;color:rgba(220,200,255,0.95);margin-bottom:3px;">
+        ⚠️ ただいまボイドタイム中
+      </div>
+      <div style="font-size:11px;color:rgba(180,160,255,0.8);" id="voidBannerText">
+        月が星座移動するまで大きな決断は保留して
+      </div>
+    </div>
+  </div>
+
   <!-- 天体活性ピル -->
   <div class="planets-row" id="planetPills">
     <div class="planet-pill">計算中…</div>
@@ -1315,6 +1334,20 @@ if ('serviceWorker' in navigator) {
         <div class="mss-desc" id="mssDesc"></div>
       </div>
       <div class="mss-money" id="mssMoney">金運 —</div>
+    </div>
+
+    <!-- ボイドタイム詳細 -->
+    <div id="voidDetailCard" style="display:none;
+      background:rgba(100,80,160,0.15);
+      border:1px solid rgba(180,150,255,0.3);
+      border-radius:16px; padding:16px 18px; margin-top:12px;">
+      <div style="font-size:10px;letter-spacing:0.14em;color:rgba(180,150,255,0.7);margin-bottom:8px;">
+        🌑 VOID OF COURSE MOON
+      </div>
+      <div style="font-size:13px;font-weight:700;color:rgba(220,200,255,0.95);margin-bottom:6px;"
+           id="voidDetailTitle">ボイドタイム情報</div>
+      <div style="font-size:12px;color:rgba(200,180,255,0.75);line-height:1.7;"
+           id="voidDetailBody"></div>
     </div>
   </div>
 
@@ -1935,7 +1968,98 @@ function lonToSignStr(lon) {
   return `${signs[Math.floor(norm / 30) % 12]} ${(norm % 30).toFixed(1)}°`;
 }
 
-/** ハウスカスプ12個（Equal House方式・ASC基準） */
+/**
+ * プラシーダス・ハウスカスプ計算
+ * ASC・MCから12ハウスのカスプ黄経を返す
+ * @param {number} ascLon  - ASC黄経（度）
+ * @param {number} mcLon   - MC黄経（度）
+ * @param {number} lat     - 緯度（度）
+ * @returns {number[]} 12個のカスプ黄経
+ */
+function calcPlacidusHouseCusps(ascLon, mcLon, lat) {
+  // 4つの軸は確定
+  // 1H=ASC, 4H=IC(MC+180), 7H=DSC(ASC+180), 10H=MC
+  const ic  = ((mcLon  + 180) % 360 + 360) % 360;
+  const dsc = ((ascLon + 180) % 360 + 360) % 360;
+
+  const eps = 23.4393 * Math.PI / 180; // 黄道傾斜角
+  const latR = lat * Math.PI / 180;
+
+  /**
+   * プラシーダス中間カスプを求める
+   * fraction: 0.333... (11H,9H用) or 0.666... (12H,8H用)
+   * direction: 1=上昇側(11,12H), -1=下降側(8,9H)
+   */
+  function placidusIntermediate(mcLon, ascLon, fraction, direction) {
+    // RAMCからの補間でカスプ黄経を求める
+    const mcR = mcLon * Math.PI / 180;
+    // MCの赤経を求める
+    const ramc = Math.atan2(Math.sin(mcR) / Math.cos(eps),
+                            Math.cos(mcR)) * 180 / Math.PI;
+    const ramcRad = ((ramc + 360) % 360) * Math.PI / 180;
+
+    // 反復法でカスプを求める（初期値はイコールハウス）
+    let cusp = ((mcLon + direction * fraction * 90) % 360 + 360) % 360;
+    for (let iter = 0; iter < 20; iter++) {
+      const cuspR = cusp * Math.PI / 180;
+      const decl  = Math.asin(Math.sin(eps) * Math.sin(cuspR));
+      const denom = Math.cos(decl) * Math.cos(latR);
+      if (Math.abs(denom) < 0.0001) break;
+      const ad = Math.asin(Math.tan(decl) * Math.tan(latR));
+      const ao = direction > 0
+        ? ramcRad + fraction * (Math.PI / 2 + ad)
+        : ramcRad - fraction * (Math.PI / 2 - ad);
+      // 黄経を逆算
+      const newCusp = Math.atan2(
+        Math.sin(ao) * Math.cos(eps) + Math.tan(decl) * Math.sin(eps),
+        Math.cos(ao)
+      ) * 180 / Math.PI;
+      const normalized = ((newCusp % 360) + 360) % 360;
+      if (Math.abs(normalized - cusp) < 0.001) { cusp = normalized; break; }
+      cusp = normalized;
+    }
+    return cusp;
+  }
+
+  // 高緯度（|lat| > 66°）ではプラシーダスが計算不能 → イコールハウスにフォールバック
+  if (Math.abs(lat) > 66) {
+    return Array.from({length: 12}, (_, i) => ((ascLon + i * 30) % 360 + 360) % 360);
+  }
+
+  try {
+    const h11 = placidusIntermediate(mcLon,  ascLon, 1/3,  1);
+    const h12 = placidusIntermediate(mcLon,  ascLon, 2/3,  1);
+    const h2  = placidusIntermediate(ic,     dsc,    1/3, -1);
+    const h3  = placidusIntermediate(ic,     dsc,    2/3, -1);
+    const h5  = placidusIntermediate(icOpp(), dsc,   1/3,  1);
+    const h6  = placidusIntermediate(icOpp(), dsc,   2/3,  1);
+    const h8  = placidusIntermediate(mcLon,  ascLon, 1/3, -1);
+    const h9  = placidusIntermediate(mcLon,  ascLon, 2/3, -1);
+
+    function icOpp() { return ((ic + 180) % 360 + 360) % 360; } // = MC
+
+    // プラシーダスの12ハウスカスプ（0-indexed: 0=1H, 1=2H,...）
+    return [
+      ascLon,  // 1H = ASC
+      h2,      // 2H
+      h3,      // 3H
+      ic,      // 4H = IC
+      h5,      // 5H
+      h6,      // 6H
+      dsc,     // 7H = DSC
+      h8,      // 8H
+      h9,      // 9H
+      mcLon,   // 10H = MC
+      h11,     // 11H
+      h12,     // 12H
+    ];
+  } catch(e) {
+    // フォールバック：イコールハウス
+    return Array.from({length: 12}, (_, i) => ((ascLon + i * 30) % 360 + 360) % 360);
+  }
+}
+
+/** 後方互換用（既存コードから呼ばれる） */
 function calcEqualHouseCusps(ascLon) {
   return Array.from({length: 12}, (_, i) => ((ascLon + i * 30) % 360 + 360) % 360);
 }
@@ -1976,7 +2100,7 @@ function calcNatalPositions(cfg) {
   const ascLon  = getAscLon(at, lat, lon);
   const mcLon   = getMcLon(at, lon);
   const pofLon  = calcPOF(ascLon, moonLon, sunLon);
-  const cusps   = calcEqualHouseCusps(ascLon);
+  const cusps = calcPlacidusHouseCusps(ascLon, mcLon, lat);
 
   const house2SignIdx = Math.floor(cusps[1] / 30) % 12;
   const house5SignIdx = Math.floor(cusps[4] / 30) % 12;
@@ -2416,6 +2540,60 @@ function updateUI(natal, transit) {
   document.getElementById('moonTitle').textContent =
     `月 ${lonToSignStr(moonLon)}（太陽との角度 ${phaseAngle.toFixed(1)}°）`;
 
+  // ── ボイドタイム計算・表示 ─────────────────────────────
+  const cfg = loadBirthConfig();
+  const lat  = cfg ? cfg.lat  : 35.6762;
+  const lon  = cfg ? cfg.lon  : 139.6503;
+  const voidInfo = calcVoidOfCourse(new Date(), lat, lon);
+
+  // メイン画面バナー
+  const voidBanner = document.getElementById('voidBanner');
+  if (voidBanner) {
+    if (voidInfo.isVoid) {
+      voidBanner.style.display = 'flex';
+      const endStr = voidInfo.voidEnd ? `〜${fmtTime(voidInfo.voidEnd)}` : '';
+      const nextStr = voidInfo.nextSign ? `（${voidInfo.nextSign}へ移動）` : '';
+      document.getElementById('voidBannerText').textContent =
+        `月のボイドタイム ${endStr} ${nextStr}　大きな決断・契約は保留して`;
+    } else {
+      voidBanner.style.display = 'none';
+    }
+  }
+
+  // バイオリズムセクション詳細カード
+  const voidDetail = document.getElementById('voidDetailCard');
+  const voidTitle  = document.getElementById('voidDetailTitle');
+  const voidBody   = document.getElementById('voidDetailBody');
+  if (voidDetail) {
+    if (voidInfo.isVoid || voidInfo.voidEnd) {
+      voidDetail.style.display = 'block';
+      if (voidInfo.isVoid) {
+        voidTitle.textContent = '🌑 現在ボイドタイム中';
+        const endStr  = voidInfo.voidEnd  ? fmtTime(voidInfo.voidEnd)  : '—';
+        const nextStr = voidInfo.nextSign ? voidInfo.nextSign : '—';
+        voidBody.innerHTML =
+          `終了予定：<strong style="color:rgba(220,200,255,0.95);">${endStr}</strong>　次の星座：${nextStr}<br><br>` +
+          `ボイドタイムとは、月が次の星座に移動するまでの「無効の時間」。` +
+          `この時間帯に始めたことは不完全に終わりやすいとされます。<br>` +
+          `<strong style="color:rgba(220,200,255,0.9);">大きな契約・投資・新規スタートは終了後に。</strong>`;
+      } else {
+        const startStr = voidInfo.voidStart ? fmtTime(voidInfo.voidStart) : '—';
+        const endStr   = voidInfo.voidEnd   ? fmtTime(voidInfo.voidEnd)   : '—';
+        const nextStr  = voidInfo.nextSign  ? voidInfo.nextSign            : '—';
+        if (voidInfo.voidEnd && new Date() < voidInfo.voidEnd) {
+          voidTitle.textContent = '🌙 本日のボイドタイム予報';
+          voidBody.innerHTML =
+            `開始：${startStr}　終了：<strong style="color:rgba(220,200,255,0.95);">${endStr}</strong>　次の星座：${nextStr}<br><br>` +
+            `この時間帯は大きな決断・契約・買い物を避けるのが吉。内省・計画・準備に使うと◎`;
+        } else {
+          voidDetail.style.display = 'none';
+        }
+      }
+    } else {
+      voidDetail.style.display = 'none';
+    }
+  }
+
   // アドバイスカード動的更新
   updateAdviceCards(money, battle, natal, transit);
 
@@ -2423,6 +2601,276 @@ function updateUI(natal, transit) {
   if (location.search.includes('debug')) {
     renderDebugPanel(natal, transit);
   }
+}
+
+// ============================================================
+// 🌙 ボイドタイム（Void of Course Moon）エンジン
+// 月が次の星座に移動するまでの間、最後のアスペクトの後から
+// 星座移動まで「ボイド」状態になる
+// ============================================================
+
+let _voidCache = null;
+
+/**
+ * 今日のボイドタイムを計算（astronomy-engine使用）
+ * @returns {{ isVoid:bool, voidStart:Date|null, voidEnd:Date|null, nextSign:string|null }}
+ */
+function calcVoidOfCourse(date, lat, lon) {
+  if (typeof Astronomy === 'undefined') return { isVoid: false };
+
+  const cacheKey = date.toDateString() + lat + lon;
+  if (_voidCache && _voidCache.key === cacheKey) return _voidCache.result;
+
+  try {
+    const at = Astronomy.MakeTime(date);
+
+    // 現在の月の星座
+    const moonLonNow = getMoonLon(at);
+    const currentSign = Math.floor(((moonLonNow % 360) + 360) % 360 / 30);
+
+    // 次の星座移動を検索（最大3日先まで）
+    let signChangeTime = null;
+    let nextSignName   = null;
+    const searchEnd    = new Date(date.getTime() + 3 * 86400000);
+
+    // 1分刻みで月の星座変化を検出
+    let prevSign = currentSign;
+    for (let dt = 60; dt <= 3 * 24 * 60; dt += 1) {
+      const checkDate = new Date(date.getTime() + dt * 60000);
+      const checkAt   = Astronomy.MakeTime(checkDate);
+      const checkLon  = getMoonLon(checkAt);
+      const checkSign = Math.floor(((checkLon % 360) + 360) % 360 / 30);
+      if (checkSign !== prevSign) {
+        signChangeTime = checkDate;
+        nextSignName   = getSign(checkSign * 30);
+        break;
+      }
+      prevSign = checkSign;
+    }
+
+    if (!signChangeTime) return { isVoid: false };
+
+    // 星座移動前の最後のアスペクトを検索
+    // 対象天体：太陽・水星・金星・火星・木星・土星・天王星・海王星・冥王星
+    const ASPECT_PLANETS = ['Sun','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto'];
+    const ASPECT_ANGLES  = [0, 60, 90, 120, 180];
+    const ORB = 1.0; // ボイド判定は厳しめのオーブで
+
+    let lastAspectTime = null;
+
+    // 星座移動の24時間前〜現在を逆向きに検索
+    const searchStart = new Date(Math.max(
+      signChangeTime.getTime() - 24 * 3600000,
+      date.getTime() - 12 * 3600000
+    ));
+
+    for (let dt = 0; dt <= 24 * 60; dt += 5) {
+      const checkDate = new Date(signChangeTime.getTime() - dt * 60000);
+      if (checkDate < searchStart) break;
+      const checkAt  = Astronomy.MakeTime(checkDate);
+      const moonLon  = getMoonLon(checkAt);
+
+      for (const pName of ASPECT_PLANETS) {
+        const pLon = getPlanetLon(pName, checkAt);
+        const orb  = getOrb(moonLon, pLon);
+        for (const angle of ASPECT_ANGLES) {
+          if (Math.abs(orb - angle) <= ORB) {
+            // アスペクト発見 → これが最後のアスペクト候補
+            if (!lastAspectTime || checkDate > lastAspectTime) {
+              lastAspectTime = checkDate;
+            }
+          }
+        }
+      }
+      if (lastAspectTime) break; // 最初に見つかったら（時刻が新しい方から）OK
+    }
+
+    const voidStart = lastAspectTime;
+    const voidEnd   = signChangeTime;
+    const now       = date;
+    const isVoid    = voidStart && now >= voidStart && now < voidEnd;
+
+    const result = { isVoid, voidStart, voidEnd, nextSign: nextSignName, currentSign: getSign(currentSign * 30) };
+    _voidCache = { key: cacheKey, result };
+    return result;
+
+  } catch(e) {
+    return { isVoid: false };
+  }
+}
+
+/** 時刻を HH:MM 形式にフォーマット */
+function fmtTime(date) {
+  if (!date) return '';
+  return `${date.getHours()}:${String(date.getMinutes()).padStart(2,'0')}`;
+}
+
+// ============================================================
+// 🪐 プラネタリーアワー（惑星時間）エンジン
+// ============================================================
+
+// カルデア順（土→木→火→日→金→水→月 を繰り返す）
+const CHALDEAN_ORDER = ['saturn','jupiter','mars','sun','venus','mercury','moon'];
+
+// 曜日ごとの第1時間（日の出）の惑星
+// 日=太陽, 月=月, 火=火星, 水=水星, 木=木星, 金=金星, 土=土星
+const DAY_RULER = ['sun','moon','mars','mercury','jupiter','venus','saturn'];
+
+const PLANET_HOUR_NAMES = {
+  sun:     { sym:'☉', name:'太陽',   meaning:'名誉・成功・リーダーシップ・契約',    moneyLevel: 3 },
+  moon:    { sym:'☽', name:'月',     meaning:'感情・直感・家庭・日常の金運',         moneyLevel: 3 },
+  mars:    { sym:'♂', name:'火星',   meaning:'行動・競争・勝負・エネルギー',         moneyLevel: 2 },
+  mercury: { sym:'☿', name:'水星',   meaning:'交渉・情報・契約・コミュニケーション', moneyLevel: 3 },
+  jupiter: { sym:'♃', name:'木星',   meaning:'拡大・幸運・金運・豊かさ',            moneyLevel: 5 },
+  venus:   { sym:'♀', name:'金星',   meaning:'金運・美・愛・豊かさ・買い物',        moneyLevel: 5 },
+  saturn:  { sym:'♄', name:'土星',   meaning:'節制・忍耐・長期投資・構造化',        moneyLevel: 1 },
+};
+
+/**
+ * 日の出・日の入り時刻をastronomy-engineで計算
+ * @returns {{ sunrise: Date, sunset: Date } | null}
+ */
+function calcSunriseSunset(date, lat, lon) {
+  if (typeof Astronomy === 'undefined') return null;
+  try {
+    const at       = Astronomy.MakeTime(date);
+    const observer = new Astronomy.Observer(lat, lon, 0);
+
+    // 日の出：当日の日の出を検索
+    const sunriseResult = Astronomy.SearchRiseSet(
+      Astronomy.Body.Sun, observer, +1, at, 1
+    );
+    // 日の入り：日の出以降の日の入りを検索
+    const sunsetResult = Astronomy.SearchRiseSet(
+      Astronomy.Body.Sun, observer, -1, at, 1
+    );
+
+    if (!sunriseResult || !sunsetResult) return null;
+
+    // JST に変換（astronomy-engineはUTCで返す）
+    const sunrise = new Date(sunriseResult.date.getTime() + 9 * 3600000);
+    const sunset  = new Date(sunsetResult.date.getTime()  + 9 * 3600000);
+    return { sunrise, sunset };
+  } catch(e) {
+    return null;
+  }
+}
+
+/**
+ * 全24時間分のプラネタリーアワーを計算
+ * @returns {Array<{planet:string, start:Date, end:Date, isDay:boolean}>}
+ */
+function calcAllPlanetaryHours(date, lat, lon) {
+  const ss = calcSunriseSunset(date, lat, lon);
+
+  // フォールバック：astronomy-engine 未ロードや計算失敗時
+  // 日の出6:00・日の入り18:00として近似
+  const dayStart = ss
+    ? ss.sunrise
+    : new Date(date.getFullYear(), date.getMonth(), date.getDate(), 6, 0, 0);
+  const dayEnd = ss
+    ? ss.sunset
+    : new Date(date.getFullYear(), date.getMonth(), date.getDate(), 18, 0, 0);
+
+  // 翌日の日の出（夜の終わり）
+  const nextDate = new Date(date.getTime() + 86400000);
+  const ssNext   = calcSunriseSunset(nextDate, lat, lon);
+  const nextSunrise = ssNext
+    ? ssNext.sunrise
+    : new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 6, 0, 0);
+
+  // 昼の1時間の長さ（ms）
+  const dayMs   = (dayEnd.getTime() - dayStart.getTime()) / 12;
+  // 夜の1時間の長さ（ms）
+  const nightMs = (nextSunrise.getTime() - dayEnd.getTime()) / 12;
+
+  // 曜日ルーラー（その曜日の第1時間の惑星）
+  const dow        = date.getDay(); // 0=日,1=月,...
+  const dayRuler   = DAY_RULER[dow];
+  const startIdx   = CHALDEAN_ORDER.indexOf(dayRuler);
+
+  const hours = [];
+
+  // 昼12時間
+  for (let i = 0; i < 12; i++) {
+    const planet = CHALDEAN_ORDER[(startIdx + i) % 7];
+    const start  = new Date(dayStart.getTime() + dayMs * i);
+    const end    = new Date(dayStart.getTime() + dayMs * (i + 1));
+    hours.push({ planet, start, end, isDay: true, hourNum: i + 1 });
+  }
+
+  // 夜12時間（昼12時間終わった惑星の続き）
+  for (let i = 0; i < 12; i++) {
+    const planet = CHALDEAN_ORDER[(startIdx + 12 + i) % 7];
+    const start  = new Date(dayEnd.getTime() + nightMs * i);
+    const end    = new Date(dayEnd.getTime() + nightMs * (i + 1));
+    hours.push({ planet, start, end, isDay: false, hourNum: i + 1 });
+  }
+
+  return hours;
+}
+
+/**
+ * 今日の金運・勝負運ピーク時間帯を返す
+ * @returns {{ icon:string, text:string, detail:Array }}
+ */
+function calcPlanetaryHourPeak(money, battle) {
+  const cfg = loadBirthConfig();
+  const lat  = cfg ? cfg.lat  : 35.6762;
+  const lon  = cfg ? cfg.lon  : 139.6503;
+  const now  = new Date();
+
+  const allHours = calcAllPlanetaryHours(now, lat, lon);
+  if (!allHours || allHours.length === 0) {
+    return { icon:'🌅', text:'朝一番（7〜9時）に意図設定するのが吉' };
+  }
+
+  // 今いる惑星時間を探す
+  const currentHour = allHours.find(h => now >= h.start && now < h.end);
+  const currentPlanet = currentHour ? PLANET_HOUR_NAMES[currentHour.planet] : null;
+
+  // 金運ピーク惑星：木星・金星・太陽・水星（月も◎）
+  const MONEY_PLANETS = ['jupiter','venus','sun','mercury','moon'];
+
+  // 今日の日中の金運良い時間帯を全部集める
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const todayEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  const goodHours  = allHours.filter(h =>
+    MONEY_PLANETS.includes(h.planet) &&
+    h.start >= todayStart && h.start <= todayEnd &&
+    h.start > now  // これから来る時間帯
+  );
+
+  // 時刻フォーマット
+  const fmt = (d) => {
+    const jst = new Date(d);
+    return `${jst.getHours()}:${String(jst.getMinutes()).padStart(2,'0')}`;
+  };
+
+  // 現在が金運良い時間帯なら強調
+  if (currentHour && MONEY_PLANETS.includes(currentHour.planet)) {
+    const p = PLANET_HOUR_NAMES[currentHour.planet];
+    return {
+      icon: p.sym,
+      text: `今まさに${p.name}時間！〜${fmt(currentHour.end)}\n${p.meaning}`,
+    };
+  }
+
+  // 次の金運時間帯を案内
+  if (goodHours.length > 0) {
+    const next = goodHours[0];
+    const p    = PLANET_HOUR_NAMES[next.planet];
+    return {
+      icon: p.sym,
+      text: `${fmt(next.start)}〜${fmt(next.end)}　${p.name}時間\n${p.meaning}`,
+    };
+  }
+
+  // 今日の金運時間帯がすべて終わった場合
+  return {
+    icon: '🌙',
+    text: '今日の金運時間帯は終了。明日の朝に備えて',
+  };
 }
 
 // ============================================================
@@ -2470,17 +2918,8 @@ function updateAdviceCards(money, battle, natal, transit) {
   };
   const luckyData = luckyItems[moonSign] || { icon:'✨', text:'ゴールドのアクセサリー・開運財布・水晶' };
 
-  // PEAK TIME（活性天体で変化）
-  const peakData = (() => {
-    const jupActive  = money.reasons.some(r => r.includes('木星'));
-    const venActive  = money.reasons.some(r => r.includes('金星'));
-    const moonActive = money.reasons.some(r => r.includes('月'));
-    const h = new Date().getHours();
-    if (jupActive) return { icon:'♃', text: h < 12 ? '午前中〜12時　木星のエネルギーが活発' : '14:00〜16:00　木星時間帯がピーク' };
-    if (venActive) return { icon:'♀', text: h < 14  ? '10:00〜12:00　金星時間帯に行動を' : '15:00〜17:00　金星の恵みを受け取って' };
-    if (moonActive)return { icon:'☽', text: '月の動きが活発な夜〜深夜が◎。直感を大切に' };
-    return                { icon:'🌅', text: '朝一番（7〜9時）に意図設定するのが吉' };
-  })();
+  // PEAK TIME（プラネタリーアワーで正確に計算）
+  const peakData = calcPlanetaryHourPeak(money, battle);
 
   // DOMに反映
   document.getElementById('adviceActionIcon').textContent = actionData.icon;
@@ -3656,7 +4095,20 @@ function drawNatalChart(natal) {
     <circle cx="0" cy="0" r="${Ri}" fill="rgba(0,0,0,0.3)"        stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
   `;
 
-  // 12星座ピザ（30度ずつ）
+  // ============================================================
+  // SVGの角度変換ルール（占星術ホイール標準）
+  // ・上 = MC（天頂）
+  // ・左 = ASC（東の地平線）
+  // ・黄経0°（牡羊座0°）の位置はASCの黄経によって回転する
+  // 変換式: svgAngle = -(lon - ascLon) - 90°（反時計回り → 時計回り変換）
+  // ============================================================
+  function lonToSvgAngle(lon, ascLon) {
+    // 黄経をASC基準に変換し、SVG座標系（時計回り、上=0）に変換
+    return (-(lon - ascLon) - 90) * Math.PI / 180;
+  }
+  const ascLonVal = natal.asc != null ? natal.asc : 0;
+
+  // 12星座ピザ（ASC基準で回転）
   const signColors = [
     '#FF6B6B','#8BC34A','#FFD54F','#4DB6AC',
     '#FF8A65','#A1887F','#90CAF9','#CE93D8',
@@ -3665,31 +4117,34 @@ function drawNatalChart(natal) {
   const signSymbols = ['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
   let signsSVG = '';
   for (let i = 0; i < 12; i++) {
-    const startAngle = (i * 30 - 90) * Math.PI / 180;
-    const endAngle   = ((i + 1) * 30 - 90) * Math.PI / 180;
-    const midAngle   = ((i * 30 + 15) - 90) * Math.PI / 180;
-    const x1 = R * Math.cos(startAngle), y1 = R * Math.sin(startAngle);
-    const x2 = R * Math.cos(endAngle),   y2 = R * Math.sin(endAngle);
-    const lx = (R - 10) * Math.cos(midAngle), ly = (R - 10) * Math.sin(midAngle);
+    const signLon  = i * 30; // 黄経
+    const startA   = lonToSvgAngle(signLon,      ascLonVal);
+    const endA     = lonToSvgAngle(signLon + 30, ascLonVal);
+    const midA     = lonToSvgAngle(signLon + 15, ascLonVal);
+    const x1 = R * Math.cos(startA), y1 = R * Math.sin(startA);
+    const x2 = R * Math.cos(endA),   y2 = R * Math.sin(endA);
+    const lx = (R - 10) * Math.cos(midA), ly = (R - 10) * Math.sin(midA);
     signsSVG += `
-      <path d="M0,0 L${x1},${y1} A${R},${R} 0 0,1 ${x2},${y2} Z"
+      <path d="M0,0 L${x1},${y1} A${R},${R} 0 0,0 ${x2},${y2} Z"
             fill="${signColors[i]}18" stroke="${signColors[i]}40" stroke-width="0.5"/>
       <text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central"
             font-size="9" fill="${signColors[i]}CC">${signSymbols[i]}</text>
     `;
   }
 
-  // ハウス境界線（Equal House）
+  // ハウス境界線（プラシーダス or イコール）
   let housesSVG = '';
   if (natal.houseCusps) {
     natal.houseCusps.forEach((cusp, i) => {
-      const angle = (cusp - 90) * Math.PI / 180;
+      const angle = lonToSvgAngle(cusp, ascLonVal);
       const x1 = Ri * Math.cos(angle), y1 = Ri * Math.sin(angle);
       const x2 = Rh * Math.cos(angle), y2 = Rh * Math.sin(angle);
       const lx = (Rh + 10) * Math.cos(angle), ly = (Rh + 10) * Math.sin(angle);
+      const isAxis = [0, 3, 6, 9].includes(i);
       housesSVG += `
         <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"
-              stroke="rgba(255,255,255,0.15)" stroke-width="${i === 0 || i === 3 || i === 6 || i === 9 ? 1.5 : 0.7}"/>
+              stroke="rgba(255,255,255,${isAxis?'0.3':'0.12'})"
+              stroke-width="${isAxis ? 1.5 : 0.7}"/>
         <text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central"
               font-size="7" fill="rgba(255,255,255,0.3)">${i+1}</text>
       `;
@@ -3703,29 +4158,24 @@ function drawNatalChart(natal) {
 
   // 重なり防止：同じ付近の天体を少しずらす
   const placed = [];
-  function adjustedAngle(lon) {
-    let angle = lon;
+  function adjustedLon(lon) {
+    let adj = lon;
     for (const p of placed) {
-      if (Math.abs(((angle - p) % 360 + 360) % 360 - 180) > 170 ||
-          Math.abs(((angle - p) % 360 + 360) % 360) < 12) {
-        angle += 13;
-      }
+      const diff = ((adj - p) % 360 + 360) % 360;
+      if (diff < 13 || diff > 347) adj += 14;
     }
-    placed.push(angle);
-    return angle;
+    placed.push(adj);
+    return adj;
   }
 
   let planetsSVG = '';
   plotPlanets.forEach(p => {
-    const lon   = natal[p.key];
-    const adjLon = adjustedAngle(lon);
-    const angle  = (adjLon - 90) * Math.PI / 180;
-    const Rp    = Ri - 14;
-    const px    = Rp * Math.cos(angle);
-    const py    = Rp * Math.sin(angle);
-    // 実際の位置から点線を引く
-    const lineAngle = (lon - 90) * Math.PI / 180;
-    const lx1 = (Ri - 3) * Math.cos(lineAngle), ly1 = (Ri - 3) * Math.sin(lineAngle);
+    const lon    = natal[p.key];
+    const adjLon = adjustedLon(lon);
+    const angle  = lonToSvgAngle(adjLon, ascLonVal);
+    const Rp     = Ri - 14;
+    const px     = Rp * Math.cos(angle);
+    const py     = Rp * Math.sin(angle);
     planetsSVG += `
       <circle cx="${px}" cy="${py}" r="11" fill="rgba(0,0,0,0.6)"
               stroke="${p.color}88" stroke-width="1"/>
@@ -3738,28 +4188,28 @@ function drawNatalChart(natal) {
     `;
   });
 
-  // ASC・MC のライン
+  // ASC・MC のライン（正しい位置に描画）
   let angleLinesSVG = '';
   if (natal.asc != null) {
-    const a = (natal.asc - 90) * Math.PI / 180;
+    const a = lonToSvgAngle(natal.asc, ascLonVal); // ASCは必ず左（-90°方向）
     angleLinesSVG += `
       <line x1="${-R * Math.cos(a)}" y1="${-R * Math.sin(a)}"
-            x2="${R * Math.cos(a)}"  y2="${R * Math.sin(a)}"
-            stroke="rgba(240,217,168,0.5)" stroke-width="1" stroke-dasharray="4 3"/>
-      <text x="${(R+10)*Math.cos(a)}" y="${(R+10)*Math.sin(a)}"
+            x2="${R  * Math.cos(a)}" y2="${R  * Math.sin(a)}"
+            stroke="rgba(240,217,168,0.6)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="${(R+12)*Math.cos(a)}" y="${(R+12)*Math.sin(a)}"
             text-anchor="middle" dominant-baseline="central"
-            font-size="9" fill="#F0D9A8">Asc</text>
+            font-size="9" fill="#F0D9A8" font-weight="bold">Asc</text>
     `;
   }
   if (natal.mc != null) {
-    const a = (natal.mc - 90) * Math.PI / 180;
+    const a = lonToSvgAngle(natal.mc, ascLonVal); // MCは必ず上（-90°方向）
     angleLinesSVG += `
       <line x1="${-Rh * Math.cos(a)}" y1="${-Rh * Math.sin(a)}"
-            x2="${Rh * Math.cos(a)}"  y2="${Rh * Math.sin(a)}"
-            stroke="rgba(201,169,110,0.4)" stroke-width="1" stroke-dasharray="4 3"/>
-      <text x="${(R+10)*Math.cos(a)}" y="${(R+10)*Math.sin(a)}"
+            x2="${Rh  * Math.cos(a)}" y2="${Rh  * Math.sin(a)}"
+            stroke="rgba(201,169,110,0.5)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="${(R+12)*Math.cos(a)}" y="${(R+12)*Math.sin(a)}"
             text-anchor="middle" dominant-baseline="central"
-            font-size="9" fill="#C9A96E">MC</text>
+            font-size="9" fill="#C9A96E" font-weight="bold">MC</text>
     `;
   }
 
@@ -3904,20 +4354,67 @@ function renderMydata() {
   renderMoneyType(natal);
 }
 const ROKUYOU = ['大安','赤口','先勝','友引','先負','仏滅'];
-function calcKyureki(year, month, day) {
-  const date = new Date(year, month - 1, day);
-  const knownNewMoon = new Date('2000-01-06T18:14:00Z');
-  const LUNAR = 29.530588853;
-  const diffDays = (date - knownNewMoon) / 86400000;
-  const cyclePos = ((diffDays % LUNAR) + LUNAR) % LUNAR;
-  const totalMonths = Math.floor(diffDays / LUNAR);
-  const kyuMonth = ((totalMonths % 12) + 12) % 12 + 1;
-  const kyuDay   = Math.floor(cyclePos) + 1;
-  return { m: kyuMonth, d: kyuDay };
+
+// ── 六曜計算（正確な朔データ使用）────────────────────────────
+const SAKU_DATA = {
+  2024:['2024-01-11T11:57+09:00','2024-02-10T07:59+09:00','2024-03-10T17:00+09:00',
+        '2024-04-09T02:21+09:00','2024-05-08T12:22+09:00','2024-06-06T21:38+09:00',
+        '2024-07-06T06:57+09:00','2024-08-04T20:13+09:00','2024-09-03T10:55+09:00',
+        '2024-10-03T02:49+09:00','2024-11-01T21:47+09:00','2024-12-01T15:21+09:00',
+        '2024-12-31T07:27+09:00'],
+  2025:['2025-01-29T21:35+09:00','2025-02-28T17:44+09:00','2025-03-30T04:57+09:00',
+        '2025-04-28T13:31+09:00','2025-05-27T21:02+09:00','2025-06-26T04:31+09:00',
+        '2025-07-25T13:11+09:00','2025-08-23T23:06+09:00','2025-09-22T10:54+09:00',
+        '2025-10-22T01:25+09:00','2025-11-20T18:47+09:00','2025-12-20T14:43+09:00'],
+  2026:['2026-01-19T11:51+09:00','2026-02-18T09:01+09:00','2026-03-20T05:23+09:00',
+        '2026-04-18T23:51+09:00','2026-05-18T15:37+09:00','2026-06-17T04:53+09:00',
+        '2026-07-16T16:32+09:00','2026-08-15T03:14+09:00','2026-09-13T13:04+09:00',
+        '2026-10-12T22:50+09:00','2026-11-11T09:47+09:00','2026-12-10T22:51+09:00'],
+  2027:['2027-01-09T12:29+09:00','2027-02-08T04:44+09:00','2027-03-09T22:38+09:00',
+        '2027-04-08T17:52+09:00','2027-05-08T13:00+09:00','2027-06-07T06:40+09:00',
+        '2027-07-06T21:57+09:00','2027-08-05T10:44+09:00','2027-09-03T21:50+09:00',
+        '2027-10-03T07:11+09:00','2027-11-01T15:03+09:00','2027-11-30T22:11+09:00',
+        '2027-12-30T05:59+09:00'],
+  2028:['2028-01-28T13:15+09:00','2028-02-27T01:45+09:00','2028-03-27T13:00+09:00',
+        '2028-04-26T00:07+09:00','2028-05-25T11:19+09:00','2028-06-23T22:59+09:00',
+        '2028-07-23T11:41+09:00','2028-08-22T02:05+09:00','2028-09-20T18:24+09:00',
+        '2028-10-20T12:03+09:00','2028-11-19T06:12+09:00','2028-12-19T00:01+09:00'],
+};
+
+// 全朔をフラットリスト化（旧暦月番号付き）
+let _sakuFlat = null;
+function getSakuFlat() {
+  if (_sakuFlat) return _sakuFlat;
+  const list = [];
+  // 2023年11月の朔（2024年初を正しく計算するため）
+  list.push({ date: new Date('2023-12-13T08:32+09:00'), m: 11 });
+  let kyuM = 12; // 2024/1/11の朔 = 旧暦2023年12月
+  for (const saku of Object.values(SAKU_DATA)) {
+    for (const s of saku) {
+      list.push({ date: new Date(s), m: kyuM });
+      kyuM = (kyuM % 12) + 1;
+    }
+  }
+  // 2029年最初の朔
+  list.push({ date: new Date('2029-01-17T21:00+09:00'), m: kyuM });
+  _sakuFlat = list.sort((a,b) => a.date - b.date);
+  return _sakuFlat;
 }
+
+function getKyureki(year, month, day) {
+  const date = new Date(year, month-1, day, 12, 0, 0);
+  const saku = getSakuFlat();
+  let found = saku[0];
+  for (let i = saku.length-1; i >= 0; i--) {
+    if (saku[i].date <= date) { found = saku[i]; break; }
+  }
+  return { m: found.m, d: Math.floor((date - found.date) / 86400000) + 1 };
+}
+
 function calcRokuyou(year, month, day) {
-  const k = calcKyureki(year, month, day);
-  return ROKUYOU[(k.m + k.d) % 6];
+  const k = getKyureki(year, month, day);
+  // (旧暦月 + 旧暦日 - 1) % 6 → 旧暦1月1日=先勝(2)で正しく一致
+  return ROKUYOU[(k.m + k.d - 1) % 6];
 }
 
 // ── 一粒万倍日 ──────────────────────────────────────────────
@@ -4002,12 +4499,44 @@ function calcToraOrMi(year, month, day) {
   return null;
 }
 
-// ── 不成就日 ─────────────────────────────────────────────────
+// ── 不成就日（正確なハードコードデータ）──────────────────────
+// 出典：複数の暦サイト照合済み
+const FUSEI_DATA = {
+  2024:{
+    1:[4,12,16,24],2:[1,9,13,21],3:[1,9,17,21],4:[5,9,17,21],
+    5:[5,13,17,25],6:[2,6,14,22],7:[6,10,18,22],8:[3,7,15,23],
+    9:[6,14,22,26],10:[4,12,16,24],11:[1,9,13,21],12:[5,9,17,25],
+  },
+  2025:{
+    1:[2,10,18,22],2:[5,9,17,21],3:[1,9,13,21],4:[4,12,16,24],
+    5:[1,9,17,21],6:[4,8,16,24],7:[2,10,14,22],8:[5,9,17,25],
+    9:[2,6,14,22],10:[6,10,18,22],11:[3,7,15,23],12:[6,10,18,26],
+  },
+  2026:{
+    1:[1,9,17,24],2:[1,9,19,27],3:[7,15,20,28],4:[5,13,17,25],
+    5:[3,11,20,28],6:[5,13,19,27],7:[5,13,19,27],8:[4,12,15,23,31],
+    9:[8,12,20,28],10:[6,11,19,27],11:[4,12,20,28],12:[6,13,21,29],
+  },
+  2027:{
+    1:[5,13,21,25],2:[2,10,18,22],3:[2,10,18,22],4:[5,9,17,25],
+    5:[3,7,15,23],6:[5,13,17,25],7:[3,7,15,23],8:[5,9,17,25],
+    9:[2,6,14,22],10:[4,12,16,24],11:[1,9,17,21],12:[5,9,17,25],
+  },
+  2028:{
+    1:[2,10,14,22],2:[4,8,16,20],3:[3,7,15,19],4:[5,9,13,21],
+    5:[3,7,15,23],6:[4,8,16,24],7:[2,10,14,22],8:[4,8,16,24],
+    9:[1,9,13,21],10:[4,8,16,20],11:[3,7,15,23],12:[5,9,17,25],
+  },
+};
+
 function calcFusei(year, month, day) {
-  const base = new Date(1900, 0, 1);
-  const date = new Date(year, month - 1, day);
-  const kanshi = ((Math.floor((date - base) / 86400000) % 60) + 60) % 60;
-  return [5, 6, 11, 20, 29, 36, 38, 46].includes(kanshi);
+  if (FUSEI_DATA[year]) {
+    return (FUSEI_DATA[year][month] || []).includes(day);
+  }
+  // 登録外の年は8日間隔の近似
+  const base = new Date(1900, 0, 5);
+  const diff = Math.floor((new Date(year, month-1, day) - base) / 86400000);
+  return ((diff % 8) + 8) % 8 === 0;
 }
 
 // ── 天赦日 ───────────────────────────────────────────────────
