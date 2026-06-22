@@ -2703,14 +2703,33 @@ const CHALDEAN_ORDER = ['saturn','jupiter','mars','sun','venus','mercury','moon'
 const DAY_RULER = ['sun','moon','mars','mercury','jupiter','venus','saturn'];
 
 const PLANET_HOUR_NAMES = {
-  sun:     { sym:'☉', name:'太陽',   meaning:'名誉・成功・リーダーシップ・契約',    moneyLevel: 3 },
-  moon:    { sym:'☽', name:'月',     meaning:'感情・直感・家庭・日常の金運',         moneyLevel: 3 },
-  mars:    { sym:'♂', name:'火星',   meaning:'行動・競争・勝負・エネルギー',         moneyLevel: 2 },
-  mercury: { sym:'☿', name:'水星',   meaning:'交渉・情報・契約・コミュニケーション', moneyLevel: 3 },
-  jupiter: { sym:'♃', name:'木星',   meaning:'拡大・幸運・金運・豊かさ',            moneyLevel: 5 },
-  venus:   { sym:'♀', name:'金星',   meaning:'金運・美・愛・豊かさ・買い物',        moneyLevel: 5 },
-  saturn:  { sym:'♄', name:'土星',   meaning:'節制・忍耐・長期投資・構造化',        moneyLevel: 1 },
+  sun:     { sym:'☉', name:'太陽',   keyword:'自己表現・リーダーシップ',
+             activities:'プレゼン・自己アピール・目立つ活動・契約ごと',
+             moneyNote:'契約・プレゼンに◎' },
+  moon:    { sym:'☽', name:'月',     keyword:'感情のケア・直感',
+             activities:'瞑想・家事・家族との時間・心身のメンテナンス',
+             moneyNote:'直感を使う買い物・家計見直しに◎' },
+  mars:    { sym:'♂', name:'火星',   keyword:'行動力・決断',
+             activities:'運動・交渉・勇気がいる作業・スピード重視の行動',
+             moneyNote:'勝負運向き（金運はやや弱め）' },
+  mercury: { sym:'☿', name:'水星',   keyword:'コミュニケーション・知性',
+             activities:'勉強・メール返信・商談・情報収集・短距離移動',
+             moneyNote:'交渉・契約ごとに◎' },
+  jupiter: { sym:'♃', name:'木星',   keyword:'拡大・成長・幸運',
+             activities:'学習・旅行計画・ビジネス拡大・楽観的な挑戦',
+             moneyNote:'金運最高クラス！大きな決断に◎' },
+  venus:   { sym:'♀', name:'金星',   keyword:'調和・美・人間関係',
+             activities:'お買い物・恋愛・社交・リラックス・美容',
+             moneyNote:'金運最高クラス！お買い物に◎' },
+  saturn:  { sym:'♄', name:'土星',   keyword:'忍耐・地道な努力',
+             activities:'長期計画・整理整頓・責任ある決定・基礎固め',
+             moneyNote:'節約・長期投資の計画に◎' },
 };
+
+// 曜日×惑星が一致すると特別にパワーが強まる（例：月曜日の月の時間）
+function isDayPlanetMatch(dow, planet) {
+  return DAY_RULER[dow] === planet;
+}
 
 /**
  * 日の出・日の入り時刻をastronomy-engineで計算
@@ -2797,8 +2816,7 @@ function calcAllPlanetaryHours(date, lat, lon) {
 }
 
 /**
- * 今日の金運・勝負運ピーク時間帯を返す
- * @returns {{ icon:string, text:string, detail:Array }}
+ * 今の惑星時間を返す（常に「今が何時間か」を表示）
  */
 function calcPlanetaryHourPeak(money, battle) {
   const cfg = loadBirthConfig();
@@ -2808,54 +2826,28 @@ function calcPlanetaryHourPeak(money, battle) {
 
   const allHours = calcAllPlanetaryHours(now, lat, lon);
   if (!allHours || allHours.length === 0) {
-    return { icon:'🌅', text:'朝一番（7〜9時）に意図設定するのが吉' };
+    return { icon:'🌅', text:'計算中...' };
   }
 
-  // 今いる惑星時間を探す
-  const currentHour = allHours.find(h => now >= h.start && now < h.end);
-  const currentPlanet = currentHour ? PLANET_HOUR_NAMES[currentHour.planet] : null;
+  const fmt = d => `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const dow = now.getDay();
 
-  // 金運ピーク惑星：木星・金星・太陽・水星（月も◎）
-  const MONEY_PLANETS = ['jupiter','venus','sun','mercury','moon'];
+  // 今いる時間帯
+  const cur = allHours.find(h => now >= h.start && now < h.end);
+  if (!cur) return { icon:'🌙', text:'時間帯を計算中...' };
 
-  // 今日の日中の金運良い時間帯を全部集める
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-  const todayEnd   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-  const goodHours  = allHours.filter(h =>
-    MONEY_PLANETS.includes(h.planet) &&
-    h.start >= todayStart && h.start <= todayEnd &&
-    h.start > now  // これから来る時間帯
-  );
+  const p      = PLANET_HOUR_NAMES[cur.planet];
+  const isDaytime = cur.isDay;
+  const isMatch   = isDayPlanetMatch(dow, cur.planet); // 曜日と一致でパワー増
+  const matchText = isMatch ? ' ✦ 今日の曜日と一致！特にパワー強' : '';
 
-  // 時刻フォーマット
-  const fmt = (d) => {
-    const jst = new Date(d);
-    return `${jst.getHours()}:${String(jst.getMinutes()).padStart(2,'0')}`;
-  };
-
-  // 現在が金運良い時間帯なら強調
-  if (currentHour && MONEY_PLANETS.includes(currentHour.planet)) {
-    const p = PLANET_HOUR_NAMES[currentHour.planet];
-    return {
-      icon: p.sym,
-      text: `今まさに${p.name}時間！〜${fmt(currentHour.end)}\n${p.meaning}`,
-    };
-  }
-
-  // 次の金運時間帯を案内
-  if (goodHours.length > 0) {
-    const next = goodHours[0];
-    const p    = PLANET_HOUR_NAMES[next.planet];
-    return {
-      icon: p.sym,
-      text: `${fmt(next.start)}〜${fmt(next.end)}　${p.name}時間\n${p.meaning}`,
-    };
-  }
-
-  // 今日の金運時間帯がすべて終わった場合
   return {
-    icon: '🌙',
-    text: '今日の金運時間帯は終了。明日の朝に備えて',
+    icon: p.sym,
+    text: `${isDaytime ? '☀️ 昼' : '🌙 夜'}の${cur.hourNum}番目　${fmt(cur.start)}〜${fmt(cur.end)}\n${p.keyword}${matchText}\n${p.activities}`,
+    planet: cur.planet,
+    isDay: isDaytime,
+    allHours,
+    lat, lon,
   };
 }
 
@@ -2916,10 +2908,148 @@ function updateAdviceCards(money, battle, natal, transit) {
   document.getElementById('adviceLucky').textContent      = luckyData.text;
   document.getElementById('advicePeakIcon').textContent   = peakData.icon;
   document.getElementById('advicePeak').textContent       = peakData.text;
+
+  // PEAK TIMEカードをタップで全一覧ポップアップを開く
+  const peakCard = document.querySelector('#peakTimeCard') ||
+    (() => {
+      // アドバイスカードの4枚目を探す（PEAK TIMEカード）
+      const cards = document.querySelectorAll('.advice-card');
+      return cards[3] || null;
+    })();
+  if (peakCard) {
+    peakCard.onclick = () => showPlanetaryHourList(peakData);
+    peakCard.style.cursor = 'pointer';
+    peakCard.title = 'タップで全時間帯を表示';
+  }
 }
 
 // ============================================================
-// 🔍 検証パネル（スマホでもリアル計算を目で確認できる）
+// 🪐 プラネタリーアワー 全一覧ポップアップ
+// ============================================================
+function showPlanetaryHourList(peakData) {
+  const existing = document.getElementById('planetaryHourPopup');
+  if (existing) { existing.remove(); return; }
+
+  const now = new Date();
+  const cfg = loadBirthConfig();
+  const lat = cfg ? cfg.lat : 35.6762;
+  const lon = cfg ? cfg.lon : 139.6503;
+  const allHours = peakData.allHours || calcAllPlanetaryHours(now, lat, lon);
+  if (!allHours || !allHours.length) return;
+
+  const fmt = d => `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const dow = now.getDay();
+  const dowNames = ['日','月','火','水','木','金','土'];
+  const dayRulerName = PLANET_HOUR_NAMES[DAY_RULER[dow]]?.name || '';
+
+  // 惑星ごとの色
+  const PLANET_COLOR = {
+    sun:'#FFD700', moon:'#C8C8FF', mars:'#FF6B6B',
+    mercury:'#A8D8A8', jupiter:'#FFD4A0', venus:'#FFB6C1', saturn:'#B8A898'
+  };
+  const MONEY_PLANETS = new Set(['jupiter','venus','sun','mercury','moon']);
+
+  // 今日の24時間を昼12・夜12に分けて表示
+  const todayHours = allHours.filter(h => {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const nextDate = new Date(date.getTime() + 86400000);
+    return h.start < nextDate && h.end > date;
+  }).slice(0, 24);
+
+  const rowsHTML = todayHours.map(h => {
+    const isCurrent = now >= h.start && now < h.end;
+    const p = PLANET_HOUR_NAMES[h.planet];
+    const color = PLANET_COLOR[h.planet] || '#fff';
+    const isMatch = isDayPlanetMatch(dow, h.planet);
+    const isPast = h.end <= now;
+    const isGood = MONEY_PLANETS.has(h.planet);
+
+    return `
+      <div style="
+        display:flex; align-items:center; gap:10px;
+        padding:9px 14px;
+        background:${isCurrent ? 'rgba(201,169,110,0.18)' : 'transparent'};
+        border-left:${isCurrent ? '3px solid #C9A96E' : '3px solid transparent'};
+        opacity:${isPast ? '0.4' : '1'};
+        border-bottom:1px solid rgba(255,255,255,0.05);
+      ">
+        <div style="min-width:88px;font-size:11px;color:rgba(255,255,255,0.55);">
+          ${fmt(h.start)}〜${fmt(h.end)}
+        </div>
+        <div style="font-size:15px;width:22px;text-align:center;color:${color};">${p.sym}</div>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:${color};">
+            ${p.name}${isMatch ? ' ✦' : ''}
+            ${isCurrent ? '<span style="font-size:10px;background:rgba(201,169,110,0.3);border-radius:6px;padding:1px 6px;margin-left:4px;color:#F0D9A8;">NOW</span>' : ''}
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px;">
+            ${h.isDay ? '☀️ 昼' : '🌙 夜'}の${h.hourNum}番目　${p.keyword}
+          </div>
+        </div>
+        ${isGood && !isPast ? `<div style="font-size:9px;color:rgba(201,169,110,0.7);white-space:nowrap;">金運◎</div>` : ''}
+      </div>`;
+  }).join('');
+
+  const popup = document.createElement('div');
+  popup.id = 'planetaryHourPopup';
+  popup.style.cssText = `
+    position:fixed; inset:0; z-index:6500;
+    background:rgba(0,0,0,0.72);
+    display:flex; align-items:flex-end; justify-content:center;
+    padding-bottom:80px;
+    animation:fadeIn 0.3s ease;
+  `;
+
+  popup.innerHTML = `
+    <div style="
+      width:calc(100% - 24px); max-width:420px; max-height:80vh;
+      background:linear-gradient(160deg,rgba(15,10,30,0.99),rgba(10,15,35,0.99));
+      border:1px solid rgba(201,169,110,0.35);
+      border-radius:24px; overflow:hidden;
+      display:flex; flex-direction:column;
+      box-shadow:0 -4px 40px rgba(0,0,0,0.7);
+    ">
+      <!-- ヘッダー -->
+      <div style="padding:18px 18px 12px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-family:'Playfair Display',serif;font-size:16px;color:#fff;">
+            🪐 プラネタリーアワー
+          </div>
+          <button onclick="document.getElementById('planetaryHourPopup').remove()"
+            style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;
+                   padding:5px 12px;color:rgba(255,255,255,0.6);cursor:pointer;font-size:12px;">
+            閉じる
+          </button>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.45);line-height:1.6;">
+          ${dowNames[dow]}曜日の守護：${dayRulerName}　✦ = 曜日と惑星が一致してパワー強<br>
+          金運◎ = 木星・金星・太陽・水星・月の時間帯
+        </div>
+      </div>
+      <!-- スクロールリスト -->
+      <div style="overflow-y:auto;flex:1;">
+        ${rowsHTML}
+      </div>
+      <!-- フッター -->
+      <div style="padding:12px 18px;border-top:1px solid rgba(255,255,255,0.08);
+                  font-size:10px;color:rgba(255,255,255,0.3);text-align:center;flex-shrink:0;">
+        各惑星の時間に適した活動をするとエネルギーが後押しされやすくなります
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(popup);
+  popup.addEventListener('click', e => { if (e.target === popup) popup.remove(); });
+
+  // 現在の時間帯が見えるようにスクロール
+  setTimeout(() => {
+    const list = popup.querySelector('div[style*="overflow-y"]');
+    const nowRow = todayHours.findIndex(h => now >= h.start && now < h.end);
+    if (list && nowRow > 3) {
+      list.scrollTop = (nowRow - 2) * 58;
+    }
+  }, 100);
+}
 //    確認が済んだら「閉じる」ボタンで非表示にできます
 // ============================================================
 function renderDebugPanel(natal, transit) {
