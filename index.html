@@ -2738,24 +2738,16 @@ function isDayPlanetMatch(dow, planet) {
 function calcSunriseSunset(date, lat, lon) {
   if (typeof Astronomy === 'undefined') return null;
   try {
-    const at       = Astronomy.MakeTime(date);
     const observer = new Astronomy.Observer(lat, lon, 0);
+    const at = Astronomy.MakeTime(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 6, 0, 0));
 
-    // 日の出：当日の日の出を検索
-    const sunriseResult = Astronomy.SearchRiseSet(
-      Astronomy.Body.Sun, observer, +1, at, 1
-    );
-    // 日の入り：日の出以降の日の入りを検索
-    const sunsetResult = Astronomy.SearchRiseSet(
-      Astronomy.Body.Sun, observer, -1, at, 1
-    );
+    const sunriseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, at, 1);
+    const sunsetResult  = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, at, 1);
 
     if (!sunriseResult || !sunsetResult) return null;
 
-    // JST に変換（astronomy-engineはUTCで返す）
-    const sunrise = new Date(sunriseResult.date.getTime() + 9 * 3600000);
-    const sunset  = new Date(sunsetResult.date.getTime()  + 9 * 3600000);
-    return { sunrise, sunset };
+    const toJST = d => new Date(d.date.getTime() + 9 * 3600000);
+    return { sunrise: toJST(sunriseResult), sunset: toJST(sunsetResult) };
   } catch(e) {
     return null;
   }
@@ -2815,18 +2807,20 @@ function calcAllPlanetaryHours(date, lat, lon) {
   return hours;
 }
 
-/**
- * 今の惑星時間を返す（常に「今が何時間か」を表示）
- */
 function calcPlanetaryHourPeak(money, battle) {
   const cfg = loadBirthConfig();
   const lat  = cfg ? cfg.lat  : 35.6762;
   const lon  = cfg ? cfg.lon  : 139.6503;
   const now  = new Date();
 
+  // astronomy-engineが未ロードなら待機メッセージ
+  if (typeof Astronomy === 'undefined') {
+    return { icon:'🪐', text:'計算中...', allHours: null };
+  }
+
   const allHours = calcAllPlanetaryHours(now, lat, lon);
   if (!allHours || allHours.length === 0) {
-    return { icon:'🌅', text:'計算中...' };
+    return { icon:'🌅', text:'日の出・日の入りを計算中...', allHours: null };
   }
 
   const fmt = d => `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
@@ -2834,18 +2828,17 @@ function calcPlanetaryHourPeak(money, battle) {
 
   // 今いる時間帯
   const cur = allHours.find(h => now >= h.start && now < h.end);
-  if (!cur) return { icon:'🌙', text:'時間帯を計算中...' };
+  if (!cur) return { icon:'🌙', text:'時間帯を取得中...', allHours };
 
-  const p      = PLANET_HOUR_NAMES[cur.planet];
-  const isDaytime = cur.isDay;
-  const isMatch   = isDayPlanetMatch(dow, cur.planet); // 曜日と一致でパワー増
-  const matchText = isMatch ? ' ✦ 今日の曜日と一致！特にパワー強' : '';
+  const p       = PLANET_HOUR_NAMES[cur.planet];
+  const isMatch = isDayPlanetMatch(dow, cur.planet);
+  const matchText = isMatch ? '\n✦ 今日の曜日と一致！特にパワー強' : '';
 
   return {
     icon: p.sym,
-    text: `${isDaytime ? '☀️ 昼' : '🌙 夜'}の${cur.hourNum}番目　${fmt(cur.start)}〜${fmt(cur.end)}\n${p.keyword}${matchText}\n${p.activities}`,
+    text: `${cur.isDay ? '☀️ 昼' : '🌙 夜'}の${cur.hourNum}番目　${fmt(cur.start)}〜${fmt(cur.end)}\n${p.keyword}${matchText}`,
     planet: cur.planet,
-    isDay: isDaytime,
+    isDay: cur.isDay,
     allHours,
     lat, lon,
   };
@@ -2897,6 +2890,7 @@ function updateAdviceCards(money, battle, natal, transit) {
   const luckyData = luckyItems[moonSign] || { icon:'✨', text:'ゴールドのアクセサリー・開運財布・水晶' };
 
   // PEAK TIME（プラネタリーアワーで正確に計算）
+  // astronomy-engineのロード完了を待ってから計算
   const peakData = calcPlanetaryHourPeak(money, battle);
 
   // DOMに反映
@@ -2910,16 +2904,28 @@ function updateAdviceCards(money, battle, natal, transit) {
   document.getElementById('advicePeak').textContent       = peakData.text;
 
   // PEAK TIMEカードをタップで全一覧ポップアップを開く
-  const peakCard = document.querySelector('#peakTimeCard') ||
-    (() => {
-      // アドバイスカードの4枚目を探す（PEAK TIMEカード）
-      const cards = document.querySelectorAll('.advice-card');
-      return cards[3] || null;
-    })();
+  const peakCard = (() => {
+    const cards = document.querySelectorAll('.advice-card');
+    return cards[3] || null;
+  })();
   if (peakCard) {
     peakCard.onclick = () => showPlanetaryHourList(peakData);
     peakCard.style.cursor = 'pointer';
-    peakCard.title = 'タップで全時間帯を表示';
+  }
+
+  // astronomy-engineがまだロード中なら遅延して再計算
+  if (typeof Astronomy === 'undefined' || !peakData.allHours) {
+    const retryPeak = setInterval(() => {
+      if (typeof Astronomy !== 'undefined') {
+        clearInterval(retryPeak);
+        const fresh = calcPlanetaryHourPeak(money, battle);
+        document.getElementById('advicePeakIcon').textContent = fresh.icon;
+        document.getElementById('advicePeak').textContent     = fresh.text;
+        if (peakCard) peakCard.onclick = () => showPlanetaryHourList(fresh);
+      }
+    }, 500);
+    // 10秒でタイムアウト
+    setTimeout(() => clearInterval(retryPeak), 10000);
   }
 }
 
