@@ -2739,15 +2739,27 @@ function calcSunriseSunset(date, lat, lon) {
   if (typeof Astronomy === 'undefined') return null;
   try {
     const observer = new Astronomy.Observer(lat, lon, 0);
-    const at = Astronomy.MakeTime(new Date(date.getFullYear(), date.getMonth(), date.getDate(), 6, 0, 0));
+    // 当日の深夜0時（JST）からUTCに変換して検索開始
+    const midnight = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0);
+    const midnightUTC = new Date(midnight.getTime() - 9 * 3600000); // JST→UTC
+    const at = Astronomy.MakeTime(midnightUTC);
 
+    // 当日の日の出（深夜0時から24時間以内）
     const sunriseResult = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, +1, at, 1);
+    // 当日の日の入り（深夜0時から24時間以内）
     const sunsetResult  = Astronomy.SearchRiseSet(Astronomy.Body.Sun, observer, -1, at, 1);
 
     if (!sunriseResult || !sunsetResult) return null;
 
-    const toJST = d => new Date(d.date.getTime() + 9 * 3600000);
-    return { sunrise: toJST(sunriseResult), sunset: toJST(sunsetResult) };
+    // UTC→JST変換
+    const toJST = r => new Date(r.date.getTime() + 9 * 3600000);
+    const sunrise = toJST(sunriseResult);
+    const sunset  = toJST(sunsetResult);
+
+    // 日の出が日の入りより後になったら（検索ミス）nullを返す
+    if (sunrise >= sunset) return null;
+
+    return { sunrise, sunset };
   } catch(e) {
     return null;
   }
@@ -2760,35 +2772,54 @@ function calcSunriseSunset(date, lat, lon) {
 function calcAllPlanetaryHours(date, lat, lon) {
   const ss = calcSunriseSunset(date, lat, lon);
 
-  // フォールバック：astronomy-engine 未ロードや計算失敗時
-  // 日の出6:00・日の入り18:00として近似
+  // フォールバック：その日の実際の時間帯に合わせて日の出・日の入りを近似
+  // 日本の平均的な時刻（夏:5:00〜19:00、冬:7:00〜17:00）を月で近似
+  const month = date.getMonth() + 1;
+  const approxSunriseH = month >= 4 && month <= 9 ? 5 : 6;
+  const approxSunsetH  = month >= 4 && month <= 9 ? 19 : 17;
+
   const dayStart = ss
     ? ss.sunrise
-    : new Date(date.getFullYear(), date.getMonth(), date.getDate(), 6, 0, 0);
+    : new Date(date.getFullYear(), date.getMonth(), date.getDate(), approxSunriseH, 0, 0);
   const dayEnd = ss
     ? ss.sunset
-    : new Date(date.getFullYear(), date.getMonth(), date.getDate(), 18, 0, 0);
+    : new Date(date.getFullYear(), date.getMonth(), date.getDate(), approxSunsetH, 0, 0);
 
   // 翌日の日の出（夜の終わり）
-  const nextDate = new Date(date.getTime() + 86400000);
+  const nextDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
   const ssNext   = calcSunriseSunset(nextDate, lat, lon);
   const nextSunrise = ssNext
     ? ssNext.sunrise
-    : new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 6, 0, 0);
+    : new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, approxSunriseH, 0, 0);
 
-  // 昼の1時間の長さ（ms）
+  // 前日の日の入り（今日の夜の始まりが今日の日の出より前の場合をカバー）
+  const prevDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1);
+  const ssPrev   = calcSunriseSunset(prevDate, lat, lon);
+  const prevSunset = ssPrev
+    ? ssPrev.sunset
+    : new Date(date.getFullYear(), date.getMonth(), date.getDate() - 1, approxSunsetH, 0, 0);
+
   const dayMs   = (dayEnd.getTime() - dayStart.getTime()) / 12;
-  // 夜の1時間の長さ（ms）
   const nightMs = (nextSunrise.getTime() - dayEnd.getTime()) / 12;
+  const prevNightMs = (dayStart.getTime() - prevSunset.getTime()) / 12;
 
-  // 曜日ルーラー（その曜日の第1時間の惑星）
-  const dow        = date.getDay(); // 0=日,1=月,...
-  const dayRuler   = DAY_RULER[dow];
-  const startIdx   = CHALDEAN_ORDER.indexOf(dayRuler);
+  const dow      = date.getDay();
+  const startIdx = CHALDEAN_ORDER.indexOf(DAY_RULER[dow]);
 
+  // 前日夜の残り（今日の日の出前の時間帯をカバー）
+  const prevDow      = (dow + 6) % 7;
+  const prevStartIdx = CHALDEAN_ORDER.indexOf(DAY_RULER[prevDow]);
   const hours = [];
 
-  // 昼12時間
+  // 前日夜12時間（今日の日の出前をカバー）
+  for (let i = 0; i < 12; i++) {
+    const planet = CHALDEAN_ORDER[(prevStartIdx + 12 + i) % 7];
+    const start  = new Date(prevSunset.getTime() + prevNightMs * i);
+    const end    = new Date(prevSunset.getTime() + prevNightMs * (i + 1));
+    hours.push({ planet, start, end, isDay: false, hourNum: i + 1, isYesterday: true });
+  }
+
+  // 今日昼12時間
   for (let i = 0; i < 12; i++) {
     const planet = CHALDEAN_ORDER[(startIdx + i) % 7];
     const start  = new Date(dayStart.getTime() + dayMs * i);
@@ -2796,7 +2827,7 @@ function calcAllPlanetaryHours(date, lat, lon) {
     hours.push({ planet, start, end, isDay: true, hourNum: i + 1 });
   }
 
-  // 夜12時間（昼12時間終わった惑星の続き）
+  // 今日夜12時間
   for (let i = 0; i < 12; i++) {
     const planet = CHALDEAN_ORDER[(startIdx + 12 + i) % 7];
     const start  = new Date(dayEnd.getTime() + nightMs * i);
@@ -2812,27 +2843,32 @@ function calcPlanetaryHourPeak(money, battle) {
   const lat  = cfg ? cfg.lat  : 35.6762;
   const lon  = cfg ? cfg.lon  : 139.6503;
   const now  = new Date();
+  const dow  = now.getDay();
 
-  // astronomy-engineが未ロードなら待機メッセージ
-  if (typeof Astronomy === 'undefined') {
+  // astronomy-engineが未ロードでもフォールバックで必ず計算する
+  const allHours = calcAllPlanetaryHours(now, lat, lon);
+  if (!allHours || allHours.length === 0) {
     return { icon:'🪐', text:'計算中...', allHours: null };
   }
 
-  const allHours = calcAllPlanetaryHours(now, lat, lon);
-  if (!allHours || allHours.length === 0) {
-    return { icon:'🌅', text:'日の出・日の入りを計算中...', allHours: null };
-  }
-
   const fmt = d => `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
-  const dow = now.getDay();
 
-  // 今いる時間帯
-  const cur = allHours.find(h => now >= h.start && now < h.end);
-  if (!cur) return { icon:'🌙', text:'時間帯を取得中...', allHours };
+  // 今いる時間帯を探す
+  let cur = allHours.find(h => now >= h.start && now < h.end);
+
+  // 見つからない場合は最も近い時間帯を使う（フォールバック）
+  if (!cur) {
+    cur = allHours.reduce((closest, h) => {
+      const diff = Math.abs(h.start.getTime() - now.getTime());
+      const cdiff = Math.abs(closest.start.getTime() - now.getTime());
+      return diff < cdiff ? h : closest;
+    }, allHours[0]);
+  }
 
   const p       = PLANET_HOUR_NAMES[cur.planet];
   const isMatch = isDayPlanetMatch(dow, cur.planet);
   const matchText = isMatch ? '\n✦ 今日の曜日と一致！特にパワー強' : '';
+  const astroLoaded = typeof Astronomy !== 'undefined';
 
   return {
     icon: p.sym,
@@ -2841,6 +2877,7 @@ function calcPlanetaryHourPeak(money, battle) {
     isDay: cur.isDay,
     allHours,
     lat, lon,
+    isApprox: !astroLoaded, // 近似計算かどうか
   };
 }
 
