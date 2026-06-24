@@ -2598,8 +2598,11 @@ function updateUI(natal, transit) {
 let _voidCache = null;
 
 /**
- * 今日のボイドタイムを計算（astronomy-engine使用）
- * @returns {{ isVoid:bool, voidStart:Date|null, voidEnd:Date|null, nextSign:string|null }}
+ * ボイドタイム計算（正確版）
+ * 正しい定義：月が現在の星座に入った瞬間〜星座移動までの間で、
+ * 最後に主要アスペクト（0/60/90/120/180°）のピーク（最接近）を迎えた時刻が
+ * ボイドタイムの開始。
+ * ポイント：「オーブ内かどうか」ではなく「アスペクトのオーブが最小になる瞬間」を検出する
  */
 function calcVoidOfCourse(date, lat, lon) {
   if (typeof Astronomy === 'undefined') return { isVoid: false };
@@ -2610,18 +2613,28 @@ function calcVoidOfCourse(date, lat, lon) {
   try {
     const at = Astronomy.MakeTime(date);
 
-    // 現在の月の星座
-    const moonLonNow = getMoonLon(at);
+    // 1. 現在の月の星座を取得
+    const moonLonNow  = getMoonLon(at);
     const currentSign = Math.floor(((moonLonNow % 360) + 360) % 360 / 30);
 
-    // 次の星座移動を検索（最大3日先まで）
+    // 2. 月が現在の星座に入った時刻を逆算（最大3日前まで）
+    let signEntryTime = new Date(date.getTime() - 3 * 86400000);
+    for (let dt = 1; dt <= 3 * 24 * 60; dt += 1) {
+      const checkDate = new Date(date.getTime() - dt * 60000);
+      const checkAt   = Astronomy.MakeTime(checkDate);
+      const checkLon  = getMoonLon(checkAt);
+      const checkSign = Math.floor(((checkLon % 360) + 360) % 360 / 30);
+      if (checkSign !== currentSign) {
+        signEntryTime = new Date(date.getTime() - (dt - 1) * 60000);
+        break;
+      }
+    }
+
+    // 3. 次の星座移動時刻を検索（最大3日先まで、1分刻み）
     let signChangeTime = null;
     let nextSignName   = null;
-    const searchEnd    = new Date(date.getTime() + 3 * 86400000);
-
-    // 1分刻みで月の星座変化を検出
     let prevSign = currentSign;
-    for (let dt = 60; dt <= 3 * 24 * 60; dt += 1) {
+    for (let dt = 1; dt <= 3 * 24 * 60; dt += 1) {
       const checkDate = new Date(date.getTime() + dt * 60000);
       const checkAt   = Astronomy.MakeTime(checkDate);
       const checkLon  = getMoonLon(checkAt);
@@ -2636,51 +2649,62 @@ function calcVoidOfCourse(date, lat, lon) {
 
     if (!signChangeTime) return { isVoid: false };
 
-    // 星座移動前の最後のアスペクトを検索
-    // 対象天体：太陽・水星・金星・火星・木星・土星・天王星・海王星・冥王星
+    // 4. 月が現在の星座にいる間（signEntry〜signChange）を順方向に検索
+    //    各惑星との角度差を5分刻みで計算し、アスペクトのピーク（最小オーブ）を検出
     const ASPECT_PLANETS = ['Sun','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto'];
     const ASPECT_ANGLES  = [0, 60, 90, 120, 180];
-    const ORB = 1.0; // ボイド判定は厳しめのオーブで
+    const ORB_THRESHOLD  = 2.0; // 検出オーブ（±2°以内を「アスペクト帯」とみなす）
+    const STEP_MIN       = 5;   // 5分刻みで検索
 
-    let lastAspectTime = null;
+    let lastAspectPeakTime = null;
 
-    // 星座移動の24時間前〜現在を逆向きに検索
-    const searchStart = new Date(Math.max(
-      signChangeTime.getTime() - 24 * 3600000,
-      date.getTime() - 12 * 3600000
-    ));
+    const totalMins = Math.floor((signChangeTime.getTime() - signEntryTime.getTime()) / 60000);
 
-    for (let dt = 0; dt <= 24 * 60; dt += 5) {
-      const checkDate = new Date(signChangeTime.getTime() - dt * 60000);
-      if (checkDate < searchStart) break;
-      const checkAt  = Astronomy.MakeTime(checkDate);
-      const moonLon  = getMoonLon(checkAt);
+    for (const pName of ASPECT_PLANETS) {
+      for (const angle of ASPECT_ANGLES) {
+        // このアスペクトのオーブが最小になる時刻を探す（ピーク検出）
+        let minOrb = Infinity;
+        let minOrbTime = null;
 
-      for (const pName of ASPECT_PLANETS) {
-        const pLon = getPlanetLon(pName, checkAt);
-        const orb  = getOrb(moonLon, pLon);
-        for (const angle of ASPECT_ANGLES) {
-          if (Math.abs(orb - angle) <= ORB) {
-            // アスペクト発見 → これが最後のアスペクト候補
-            if (!lastAspectTime || checkDate > lastAspectTime) {
-              lastAspectTime = checkDate;
-            }
+        for (let dt = 0; dt <= totalMins; dt += STEP_MIN) {
+          const checkDate = new Date(signEntryTime.getTime() + dt * 60000);
+          if (checkDate > signChangeTime) break;
+          const checkAt  = Astronomy.MakeTime(checkDate);
+          const moonLon  = getMoonLon(checkAt);
+          const pLon     = getPlanetLon(pName, checkAt);
+          const diff     = Math.abs(getOrb(moonLon, pLon) - angle);
+
+          if (diff < minOrb) {
+            minOrb = diff;
+            minOrbTime = checkDate;
+          }
+        }
+
+        // オーブが閾値以内まで接近したアスペクトのピーク時刻を記録
+        if (minOrb <= ORB_THRESHOLD && minOrbTime) {
+          if (!lastAspectPeakTime || minOrbTime > lastAspectPeakTime) {
+            lastAspectPeakTime = minOrbTime;
           }
         }
       }
-      if (lastAspectTime) break; // 最初に見つかったら（時刻が新しい方から）OK
     }
 
-    const voidStart = lastAspectTime;
+    const voidStart = lastAspectPeakTime;
     const voidEnd   = signChangeTime;
-    const now       = date;
-    const isVoid    = voidStart && now >= voidStart && now < voidEnd;
+    const isVoid    = voidStart != null && date >= voidStart && date < voidEnd;
 
-    const result = { isVoid, voidStart, voidEnd, nextSign: nextSignName, currentSign: getSign(currentSign * 30) };
+    const result = {
+      isVoid,
+      voidStart,
+      voidEnd,
+      nextSign: nextSignName,
+      currentSign: getSign(currentSign * 30),
+    };
     _voidCache = { key: cacheKey, result };
     return result;
 
   } catch(e) {
+    console.error('ボイドタイム計算エラー:', e);
     return { isVoid: false };
   }
 }
