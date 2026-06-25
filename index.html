@@ -2551,32 +2551,79 @@ function updateUI(natal, transit) {
   const voidTitle  = document.getElementById('voidDetailTitle');
   const voidBody   = document.getElementById('voidDetailBody');
   if (voidDetail) {
-    if (voidInfo.isVoid || voidInfo.voidEnd) {
+    const now = new Date();
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    if (voidInfo.isVoid) {
+      // 現在ボイドタイム中
       voidDetail.style.display = 'block';
-      if (voidInfo.isVoid) {
-        voidTitle.textContent = '🌑 現在ボイドタイム中';
-        const endStr  = voidInfo.voidEnd  ? fmtTime(voidInfo.voidEnd)  : '—';
-        const nextStr = voidInfo.nextSign ? voidInfo.nextSign : '—';
-        voidBody.innerHTML =
-          `終了予定：<strong style="color:rgba(220,200,255,0.95);">${endStr}</strong>　次の星座：${nextStr}<br><br>` +
-          `ボイドタイムとは、月が次の星座に移動するまでの「無効の時間」。` +
-          `この時間帯に始めたことは不完全に終わりやすいとされます。<br>` +
-          `<strong style="color:rgba(220,200,255,0.9);">大きな契約・投資・新規スタートは終了後に。</strong>`;
-      } else {
-        const startStr = voidInfo.voidStart ? fmtTime(voidInfo.voidStart) : '—';
-        const endStr   = voidInfo.voidEnd   ? fmtTime(voidInfo.voidEnd)   : '—';
-        const nextStr  = voidInfo.nextSign  ? voidInfo.nextSign            : '—';
-        if (voidInfo.voidEnd && new Date() < voidInfo.voidEnd) {
-          voidTitle.textContent = '🌙 本日のボイドタイム予報';
-          voidBody.innerHTML =
-            `開始：${startStr}　終了：<strong style="color:rgba(220,200,255,0.95);">${endStr}</strong>　次の星座：${nextStr}<br><br>` +
-            `この時間帯は大きな決断・契約・買い物を避けるのが吉。内省・計画・準備に使うと◎`;
-        } else {
-          voidDetail.style.display = 'none';
-        }
-      }
+      voidTitle.textContent = '🌑 現在ボイドタイム中';
+      const endStr  = voidInfo.voidEnd  ? fmtTime(voidInfo.voidEnd)  : '—';
+      const nextStr = voidInfo.nextSign ? voidInfo.nextSign : '—';
+      voidBody.innerHTML =
+        `終了予定：<strong style="color:rgba(220,200,255,0.95);">${endStr}</strong>　次の星座：${nextStr}<br><br>` +
+        `ボイドタイムとは、月が次の星座に移動するまでの「無効の時間」。<br>` +
+        `<strong style="color:rgba(220,200,255,0.9);">大きな契約・投資・新規スタートは終了後に。</strong>`;
+
+    } else if (voidInfo.voidEnd && voidInfo.voidEnd > now && voidInfo.voidEnd <= todayEnd) {
+      // 今日これからボイドタイムが来る
+      voidDetail.style.display = 'block';
+      voidTitle.textContent = '🌙 本日のボイドタイム予報';
+      const startStr = voidInfo.voidStart ? fmtTime(voidInfo.voidStart) : '—';
+      const endStr   = fmtTime(voidInfo.voidEnd);
+      const nextStr  = voidInfo.nextSign || '—';
+      voidBody.innerHTML =
+        `開始：${startStr}　終了：<strong style="color:rgba(220,200,255,0.95);">${endStr}</strong>　次の星座：${nextStr}<br><br>` +
+        `この時間帯は大きな決断・契約・買い物を避けるのが吉。内省・計画・準備に使うと◎`;
+
     } else {
-      voidDetail.style.display = 'none';
+      // 今日はボイドなし or すでに終了 → 次回を検索
+      voidDetail.style.display = 'block';
+      voidTitle.textContent = '🌙 次回のボイドタイム';
+      voidBody.innerHTML = `<span style="color:rgba(180,160,255,0.5);">検索中...</span>`;
+
+      // 非同期で翌日以降を最大7日間検索
+      (async () => {
+        const cfg2 = loadBirthConfig();
+        const lat2 = cfg2 ? cfg2.lat : 35.6762;
+        const lon2 = cfg2 ? cfg2.lon : 139.6503;
+
+        let found = null;
+        for (let dayOffset = 1; dayOffset <= 7; dayOffset++) {
+          // その日の0:30, 6:00, 12:00, 18:00 の4時点で検索して、どれかで見つかればOK
+          const checkTimes = [0, 6, 12, 18].map(h => new Date(
+            now.getFullYear(), now.getMonth(), now.getDate() + dayOffset, h, 30, 0
+          ));
+          let dayResult = null;
+          for (const searchDate of checkTimes) {
+            const nextVoid = calcVoidOfCourse(searchDate, lat2, lon2);
+            if (nextVoid.voidStart && nextVoid.voidEnd) {
+              // voidStartが今より未来であることを確認
+              if (nextVoid.voidStart > now || nextVoid.voidEnd > now) {
+                dayResult = { date: searchDate, info: nextVoid };
+                break;
+              }
+            }
+          }
+          if (dayResult) { found = dayResult; break; }
+          await new Promise(r => setTimeout(r, 10));
+        }
+
+        if (found && document.getElementById('voidDetailBody')) {
+          const d = found.date;
+          const dows = ['日','月','火','水','木','金','土'];
+          const dateStr = `${d.getMonth()+1}/${d.getDate()}（${dows[d.getDay()]}）`;
+          const startStr = found.info.voidStart ? fmtTime(found.info.voidStart) : '—';
+          const endStr   = found.info.voidEnd   ? fmtTime(found.info.voidEnd)   : '—';
+          const nextStr  = found.info.nextSign  || '—';
+          document.getElementById('voidDetailBody').innerHTML =
+            `<strong style="color:rgba(220,200,255,0.9);">${dateStr}</strong>　${startStr}〜${endStr}　→ ${nextStr}<br><br>` +
+            `大きな決断・契約・買い物はボイドタイムを避けて。内省・計画に◎`;
+        } else if (document.getElementById('voidDetailBody')) {
+          document.getElementById('voidDetailBody').innerHTML =
+            `今後7日間はボイドタイムが見つかりませんでした`;
+        }
+      })();
     }
   }
 
@@ -2607,7 +2654,8 @@ let _voidCache = null;
 function calcVoidOfCourse(date, lat, lon) {
   if (typeof Astronomy === 'undefined') return { isVoid: false };
 
-  const cacheKey = date.toDateString() + lat + lon;
+  // キャッシュキーに時間（1時間単位）も含める
+  const cacheKey = `${date.toDateString()}-${date.getHours()}-${lat}-${lon}`;
   if (_voidCache && _voidCache.key === cacheKey) return _voidCache.result;
 
   try {
